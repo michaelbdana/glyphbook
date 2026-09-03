@@ -70,6 +70,8 @@ describe.skipIf(!hasFixture)("docx import", () => {
     const body = book.chapters.filter((c) => c.section === "body");
     expect(body.length).toBeGreaterThanOrEqual(28);
 
+    expect(book.cover?.src).toMatch(/^data:image\/jpeg;base64,/);
+
     const titles = body.map((c) => c.title);
     expect(titles[0]).toBe("Chapter One");
     expect(titles[1]).toBe("Chapter Two");

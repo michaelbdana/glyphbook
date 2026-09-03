@@ -267,6 +267,9 @@ export function sanitizeBook(value: unknown): Book | null {
     theme: isRecord(value.theme)
       ? cloneAs<NonNullable<Book["theme"]>>(value.theme)
       : undefined,
+    cover: isRecord(value.cover)
+      ? cloneAs<NonNullable<Book["cover"]>>(value.cover)
+      : undefined,
   };
 }
 

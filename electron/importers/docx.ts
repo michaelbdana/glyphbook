@@ -244,6 +244,40 @@ function segmentParas(paras: Para[]): {
   return { docTitle, frontParagraphs, chapters };
 }
 
+function imageMime(name: string): string | null {
+  const ext = name.toLowerCase();
+  if (ext.endsWith(".png")) return "image/png";
+  if (ext.endsWith(".gif")) return "image/gif";
+  if (ext.endsWith(".webp")) return "image/webp";
+  if (ext.endsWith(".jpg") || ext.endsWith(".jpeg")) return "image/jpeg";
+  return null;
+}
+
+async function extractCover(
+  zip: JSZip,
+  docXml: string,
+): Promise<Book["cover"]> {
+  const firstEmbed = docXml.match(/<w:drawing[\s\S]*?r:embed="([^"]+)"/);
+  if (!firstEmbed) return undefined;
+  const relsEntry = zip.file("word/_rels/document.xml.rels");
+  if (!relsEntry) return undefined;
+  const rels = await relsEntry.async("string");
+  const relMatch = rels.match(
+    new RegExp(`<Relationship[^>]*Id="${firstEmbed[1]}"[^>]*Target="([^"]+)"`),
+  );
+  if (!relMatch) return undefined;
+  const target = relMatch[1];
+  const mediaEntry = zip.file(`word/${target}`);
+  if (!mediaEntry) return undefined;
+  const mime = imageMime(target);
+  if (!mime) return undefined;
+  const bytes = await mediaEntry.async("uint8array");
+  return {
+    src: `data:${mime};base64,${Buffer.from(bytes).toString("base64")}`,
+    alt: "",
+  };
+}
+
 export async function parseDocx(
   buffer: Buffer,
   defaultTitle: string,
@@ -261,6 +295,7 @@ export async function parseDocx(
 
   const paras = parseParagraphs(xml, styles);
   const { docTitle, frontParagraphs, chapters } = segmentParas(paras);
+  const cover = await extractCover(zip, xml);
 
   const now = new Date().toISOString();
   const front: Chapter[] = standardFront();
@@ -317,5 +352,6 @@ export async function parseDocx(
     createdAt: now,
     updatedAt: now,
     chapters: [...front, ...bodyChapters, ...backChapters],
+    cover,
   };
 }

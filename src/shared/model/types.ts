@@ -126,4 +126,5 @@ export type Book = {
   volumes?: Volume[];
   themeName?: string;
   theme?: BookThemeOverride;
+  cover?: ImageAttrs;
 };

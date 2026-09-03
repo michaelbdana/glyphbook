@@ -169,10 +169,18 @@ export default function LibraryScreen() {
                 onClick={() => openBook(book.id)}
                 className="group cursor-pointer rounded-lg border border-rule bg-white p-3 shadow-sm transition hover:shadow-md"
               >
-                <div className="relative mb-3 flex aspect-[3/4] items-center justify-center rounded-md bg-gradient-to-br from-chrome to-chrome-dark">
-                  <span className="px-2 text-center text-sm font-medium text-muted">
-                    {book.title}
-                  </span>
+                <div className="relative mb-3 flex aspect-[3/4] items-center justify-center overflow-hidden rounded-md bg-gradient-to-br from-chrome to-chrome-dark">
+                  {book.cover?.src ? (
+                    <img
+                      src={book.cover.src}
+                      alt={`${book.title} cover`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="px-2 text-center text-sm font-medium text-muted">
+                      {book.title}
+                    </span>
+                  )}
                   <div className="absolute right-1 top-1">
                     <BookMenu bookId={book.id} />
                   </div>
