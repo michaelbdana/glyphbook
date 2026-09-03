@@ -8,6 +8,7 @@ import type {
   ProseBlock,
   ProseDoc,
   ProseInline,
+  TextAlign,
   Volume,
 } from "./types";
 import { DEFAULT_CHAPTER_OPTIONS } from "./presets";
@@ -37,6 +38,15 @@ const KINDS = new Set<ChapterKind>([
 ]);
 const INCLUDE_IN = new Set(["all", "ebook", "print", "none"]);
 const BEGIN_ON = new Set(["auto", "left", "right"]);
+const TEXT_ALIGNS = new Set(["left", "center", "right", "justify"]);
+
+function sanitizeTextAlign(value: Record<string, unknown>): { textAlign?: TextAlign } {
+  const align = value.textAlign;
+  if (typeof align === "string" && TEXT_ALIGNS.has(align)) {
+    return { textAlign: align as TextAlign };
+  }
+  return {};
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -100,7 +110,10 @@ function sanitizeBlock(value: unknown): ProseBlock | null {
         if (clean) content.push(clean);
       }
     }
-    return { type: "paragraph", content };
+    const attrs = isRecord(value.attrs) ? sanitizeTextAlign(value.attrs) : {};
+    return Object.keys(attrs).length
+      ? { type: "paragraph", attrs, content }
+      : { type: "paragraph", content };
   }
 
   if (type === "heading") {
@@ -108,6 +121,10 @@ function sanitizeBlock(value: unknown): ProseBlock | null {
       isRecord(value.attrs) && typeof value.attrs.level === "number"
         ? Math.min(Math.max(Math.round(value.attrs.level), 2), 6)
         : 2;
+    const attrs = {
+      level,
+      ...(isRecord(value.attrs) ? sanitizeTextAlign(value.attrs) : {}),
+    };
     const content: ProseInline[] = [];
     if (Array.isArray(value.content)) {
       for (const inline of value.content) {
@@ -115,7 +132,7 @@ function sanitizeBlock(value: unknown): ProseBlock | null {
         if (clean) content.push(clean);
       }
     }
-    return { type: "heading", attrs: { level }, content };
+    return { type: "heading", attrs, content };
   }
 
   return cloneAs<ProseBlock>(value);

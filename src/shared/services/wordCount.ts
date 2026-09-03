@@ -1,16 +1,24 @@
 import type { ProseDoc } from "../model/types";
 
+function forEachText(root: unknown, callback: (text: string) => void): void {
+  if (Array.isArray(root)) {
+    for (const item of root) forEachText(item, callback);
+    return;
+  }
+  if (root && typeof root === "object") {
+    const node = root as Record<string, unknown>;
+    if (node.type === "text" && typeof node.text === "string") {
+      callback(node.text);
+    }
+    if (Array.isArray(node.content)) forEachText(node.content, callback);
+  }
+}
+
 export function countWords(doc: ProseDoc): number {
   let count = 0;
-  for (const block of doc.content ?? []) {
-    if (block.type !== "paragraph" && block.type !== "heading") continue;
-    for (const inline of block.content ?? []) {
-      if (inline.type === "text") {
-        const words = inline.text.split(/\s+/).filter((w) => w.length > 0);
-        count += words.length;
-      }
-    }
-  }
+  forEachText(doc, (text) => {
+    count += text.split(/\s+/).filter((w) => w.length > 0).length;
+  });
   return count;
 }
 

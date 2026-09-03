@@ -1,15 +1,35 @@
-import type { Book, Chapter, ProseBlock, ProseDoc } from "../model/types";
+import type { Book, Chapter, ProseDoc } from "../model/types";
+import { countWordsInText } from "./wordCount";
 
 export type ChapterMatch = { chapterId: string; title: string; count: number };
 
 export type FindOptions = { caseSensitive?: boolean };
 
-function countOccurrences(text: string, query: string, sensitive: boolean): number {
-  if (!query) return 0;
-  if (sensitive) return text.split(query).length - 1;
-  const lowerText = text.toLowerCase();
-  const lowerQuery = query.toLowerCase();
-  return lowerText.split(lowerQuery).length - 1;
+function countInNode(
+  root: unknown,
+  query: string,
+  sensitive: boolean,
+): number {
+  let count = 0;
+  const lowerQuery = sensitive ? query : query.toLowerCase();
+  const scan = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      for (const item of value) scan(item);
+      return;
+    }
+    if (value && typeof value === "object") {
+      const node = value as Record<string, unknown>;
+      if (node.type === "text" && typeof node.text === "string") {
+        const text = sensitive ? node.text : node.text.toLowerCase();
+        if (lowerQuery) {
+          count += text.split(lowerQuery).length - 1;
+        }
+      }
+      if (Array.isArray(node.content)) scan(node.content);
+    }
+  };
+  scan(root);
+  return count;
 }
 
 export function findInChapter(
@@ -17,16 +37,7 @@ export function findInChapter(
   query: string,
   options: FindOptions = {},
 ): ChapterMatch | null {
-  const sensitive = options.caseSensitive ?? false;
-  let count = 0;
-  for (const block of chapter.content.content ?? []) {
-    if (block.type !== "paragraph" && block.type !== "heading") continue;
-    for (const inline of block.content ?? []) {
-      if (inline.type === "text") {
-        count += countOccurrences(inline.text, query, sensitive);
-      }
-    }
-  }
+  const count = countInNode(chapter.content, query, options.caseSensitive ?? false);
   return count > 0
     ? { chapterId: chapter.id, title: chapter.title, count }
     : null;
@@ -75,30 +86,52 @@ export function replaceInText(
   return { text: result.join(""), count };
 }
 
+function transformNode(
+  root: unknown,
+  query: string,
+  replacement: string,
+  sensitive: boolean,
+): { value: unknown; count: number } {
+  if (Array.isArray(root)) {
+    let count = 0;
+    const mapped = root.map((item) => {
+      const result = transformNode(item, query, replacement, sensitive);
+      count += result.count;
+      return result.value;
+    });
+    return { value: mapped, count };
+  }
+  if (root && typeof root === "object") {
+    const node = root as Record<string, unknown>;
+    const clone: Record<string, unknown> = { ...node };
+    if (node.type === "text" && typeof node.text === "string") {
+      const result = replaceInText(node.text, query, replacement, sensitive);
+      clone.text = result.text;
+      return { value: clone, count: result.count };
+    }
+    if (Array.isArray(node.content)) {
+      const result = transformNode(node.content, query, replacement, sensitive);
+      clone.content = result.value;
+      return { value: clone, count: result.count };
+    }
+    return { value: clone, count: 0 };
+  }
+  return { value: root, count: 0 };
+}
+
 export function replaceInDoc(
   doc: ProseDoc,
   query: string,
   replacement: string,
   options: FindOptions = {},
 ): { doc: ProseDoc; replaced: number } {
-  const sensitive = options.caseSensitive ?? false;
-  let replaced = 0;
-  const content: ProseBlock[] = (doc.content ?? []).map((block) => {
-    if (block.type !== "paragraph" && block.type !== "heading") return block;
-    const inlines = (block.content ?? []).map((inline) => {
-      if (inline.type !== "text") return inline;
-      const result = replaceInText(
-        inline.text,
-        query,
-        replacement,
-        sensitive,
-      );
-      replaced += result.count;
-      return result.count > 0 ? { ...inline, text: result.text } : inline;
-    });
-    return { ...block, content: inlines };
-  });
-  return { doc: { type: "doc", content }, replaced };
+  const result = transformNode(
+    doc,
+    query,
+    replacement,
+    options.caseSensitive ?? false,
+  );
+  return { doc: result.value as ProseDoc, replaced: result.count };
 }
 
 export function replaceInBook(
@@ -111,9 +144,9 @@ export function replaceInBook(
   const chapters = book.chapters.map((chapter) => {
     const result = replaceInDoc(chapter.content, query, replacement, options);
     replaced += result.replaced;
-    return result.replaced > 0
-      ? { ...chapter, content: result.doc }
-      : chapter;
+    return result.replaced > 0 ? { ...chapter, content: result.doc } : chapter;
   });
   return { chapters, replaced };
 }
+
+export { countWordsInText };

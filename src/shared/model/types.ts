@@ -6,6 +6,8 @@ export type ProseInline = {
   marks?: Array<{ type: string; attrs?: Record<string, unknown> }>;
 };
 
+export type TextAlign = "left" | "center" | "right" | "justify";
+
 export type ImageAttrs = {
   src: string;
   caption?: string;
@@ -20,11 +22,12 @@ export type ImageAttrs = {
 export type ProseBlock =
   | {
       type: "paragraph";
+      attrs?: { textAlign?: TextAlign };
       content?: ProseInline[];
     }
   | {
       type: "heading";
-      attrs?: { level?: number };
+      attrs?: { level?: number; textAlign?: TextAlign };
       content?: ProseInline[];
     }
   | {
@@ -33,6 +36,25 @@ export type ProseBlock =
     }
   | {
       type: "sceneBreak";
+    }
+  | {
+      type: "blockquote";
+      content?: ProseBlock[];
+    }
+  | {
+      type: "bulletList";
+      content?: ProseBlock[];
+    }
+  | {
+      type: "orderedList";
+      content?: ProseBlock[];
+    }
+  | {
+      type: "listItem";
+      content?: ProseBlock[];
+    }
+  | {
+      type: "horizontalRule";
     };
 
 export type ProseDoc = {

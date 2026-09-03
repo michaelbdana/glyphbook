@@ -78,6 +78,35 @@ export function compilePrintCss(themeIn: BookTheme, ctx: PrintContext = {}): str
   object-fit: contain;
 }`;
 
+  const blockCss = `
+h2, h3, h4, h5, h6 {
+  font-family: ${theme.headingFontFamily};
+  line-height: 1.3;
+  margin: 1.1em 0 0.5em;
+}
+h2 { font-size: 15pt; }
+h3 { font-size: 13.5pt; }
+h4 { font-size: 13pt; }
+h5 { font-size: 12.5pt; }
+h6 { font-size: 12pt; }
+.chapter div[data-scene-break]::before {
+  content: "* * *";
+  letter-spacing: 0.4em;
+  color: #888;
+}
+blockquote {
+  margin: 1em 1.6em;
+  font-style: italic;
+  color: #222;
+}
+ul, ol { margin: 0.5em 0 0.5em 1.4em; }
+li { margin: 0.2em 0; }
+hr.gb-rule { border: none; border-top: 1px solid #999; width: 60%; margin: 1.2em auto; }
+.mark-small-caps { font-variant: small-caps; }
+.mark-mono, code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+.mark-sans { font-family: ui-sans-serif, system-ui, sans-serif; }
+u { text-decoration: underline; }`;
+
   return `
 @page {
   size: ${size};
@@ -122,7 +151,7 @@ p {
 ${paragraphStart}
 ${dropCaps}
 
-div[data-scene-break] { text-align: center; margin: 1.2em 0; }
+${blockCss}
 ${ornament}
 ${fullPageCss}
 `;
