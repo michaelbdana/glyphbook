@@ -14,6 +14,10 @@ type State = {
   saveState: "saved" | "saving";
 };
 
+type BookPatch = Partial<
+  Pick<Book, "title" | "author" | "projectName" | "version">
+>;
+
 type Actions = {
   setScreen: (screen: Screen) => void;
   setActiveBook: (id: string) => void;
@@ -22,12 +26,15 @@ type Actions = {
   loadSample: () => void;
   deleteBook: (id: string) => void;
   duplicateBook: (id: string) => void;
+  updateBook: (bookId: string, patch: BookPatch) => void;
   addChapter: (section: ChapterSection) => void;
+  deleteChapter: (chapterId: string) => void;
   selectChapter: (id: string) => void;
   updateChapter: (
     chapterId: string,
     patch: Partial<Pick<Chapter, "title" | "content" | "numbered">>,
   ) => void;
+  reorderChapters: (chapters: Chapter[]) => void;
   togglePreview: () => void;
   setSaveState: (state: "saved" | "saving") => void;
 };
@@ -96,9 +103,12 @@ export const useStore = create<State & Actions>((set, get) => ({
   setActiveBook: (id) =>
     set((s) => {
       const book = s.books.find((b) => b.id === id);
+      if (!book) return s;
+      const rest = s.books.filter((b) => b.id !== id);
       return {
+        books: [book, ...rest],
         activeBookId: id,
-        selectedChapterId: book?.chapters[0]?.id ?? null,
+        selectedChapterId: book.chapters[0]?.id ?? null,
       };
     }),
 
@@ -137,6 +147,15 @@ export const useStore = create<State & Actions>((set, get) => ({
       return { books: [...s.books, copy] };
     }),
 
+  updateBook: (bookId, patch) =>
+    set((s) => ({
+      books: s.books.map((b) =>
+        b.id === bookId
+          ? { ...b, ...patch, updatedAt: new Date().toISOString() }
+          : b,
+      ),
+    })),
+
   addChapter: (section) => {
     const { activeBookId } = get();
     if (!activeBookId) return;
@@ -168,10 +187,40 @@ export const useStore = create<State & Actions>((set, get) => ({
 
   selectChapter: (id) => set({ selectedChapterId: id }),
 
+  deleteChapter: (chapterId) =>
+    set((s) => {
+      if (!s.activeBookId) return s;
+      const book = s.books.find((b) => b.id === s.activeBookId);
+      if (!book) return s;
+      const chapters = book.chapters.filter((c) => c.id !== chapterId);
+      let selected = s.selectedChapterId;
+      if (selected === chapterId) {
+        const firstBody = chapters.find((c) => c.section === "body");
+        selected = (firstBody ?? chapters[0] ?? null)?.id ?? null;
+      }
+      return {
+        books: s.books.map((b) =>
+          b.id === s.activeBookId
+            ? { ...b, updatedAt: new Date().toISOString(), chapters }
+            : b,
+        ),
+        selectedChapterId: selected,
+      };
+    }),
+
   updateChapter: (chapterId, patch) =>
     set((s) => ({
       books: s.books.map((b) =>
         b.id === s.activeBookId ? patchBook(b, chapterId, patch) : b,
+      ),
+    })),
+
+  reorderChapters: (chapters) =>
+    set((s) => ({
+      books: s.books.map((b) =>
+        b.id === s.activeBookId
+          ? { ...b, updatedAt: new Date().toISOString(), chapters }
+          : b,
       ),
     })),
 
