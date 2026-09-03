@@ -1,9 +1,86 @@
 import type { BookTheme } from "../model/theme";
+import type { HeaderBox, HeaderBoxes } from "../model/prints";
 
-export type PrintContext = { bookTitle?: string; bleed?: boolean };
+export type PrintContext = {
+  bookTitle?: string;
+  bleed?: boolean;
+  authorName?: string;
+  headers?: { top?: HeaderBoxes; bottom?: HeaderBoxes };
+};
 
 function cssQuote(value: string): string {
-  return `"${value.replace(/"/g, '\\"')}"`;
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+function boxStyle(box: HeaderBox): string {
+  const style: string[] = ["font-size: 9pt"];
+  if (box.bold) style.push("font-weight: bold");
+  if (box.italic) style.push("font-style: italic");
+  if (box.underline) style.push("text-decoration: underline");
+  return style.join("; ");
+}
+
+function contentParts(box: HeaderBox, ctx: PrintContext): string[] {
+  const tokens: string[] = [];
+  const pattern = /\{(page|pages|total|book|author|chapter)\}/g;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(box.text)) !== null) {
+    if (match.index > last) {
+      tokens.push(cssQuote(box.text.slice(last, match.index)));
+    }
+    const macro = match[1];
+    if (macro === "page") tokens.push("counter(page)");
+    else if (macro === "pages" || macro === "total") tokens.push("counter(pages)");
+    else if (macro === "book") tokens.push(cssQuote(ctx.bookTitle ?? ""));
+    else if (macro === "author") tokens.push(cssQuote(ctx.authorName ?? ""));
+    else tokens.push("string(chapter)");
+    last = match.index + match[0].length;
+  }
+  if (last < box.text.length) {
+    tokens.push(cssQuote(box.text.slice(last)));
+  }
+  return tokens;
+}
+
+function marginBoxRule(
+  boxName: string,
+  box: HeaderBox,
+  ctx: PrintContext,
+): string {
+  const parts = contentParts(box, ctx).filter(Boolean);
+  if (parts.length === 0) return "";
+  return `@${boxName} { content: ${parts.join(" ")}; ${boxStyle(box)}; }`;
+}
+
+function boxesRules(boxes: HeaderBoxes, ctx: PrintContext): string {
+  const rules: string[] = [];
+  for (const [position, box] of [
+    ["top-left", boxes.left],
+    ["top-center", boxes.center],
+    ["top-right", boxes.right],
+  ] as const) {
+    if (box) {
+      const rule = marginBoxRule(position, box, ctx);
+      if (rule) rules.push(rule);
+    }
+  }
+  return rules.join("\n");
+}
+
+function bottomBoxesRules(boxes: HeaderBoxes, ctx: PrintContext): string {
+  const rules: string[] = [];
+  for (const [position, box] of [
+    ["bottom-left", boxes.left],
+    ["bottom-center", boxes.center],
+    ["bottom-right", boxes.right],
+  ] as const) {
+    if (box) {
+      const rule = marginBoxRule(position, box, ctx);
+      if (rule) rules.push(rule);
+    }
+  }
+  return rules.join("\n");
 }
 
 function topHeader(theme: BookTheme, ctx: PrintContext): string {
@@ -46,6 +123,18 @@ export function compilePrintCss(themeIn: BookTheme, ctx: PrintContext = {}): str
 
   const topContentValue = topContent(theme, ctx);
   const bottomBox = theme.pageNumber === "footer" ? "counter(page)" : "";
+
+  const hasCustomHeaders = Boolean(
+    ctx.headers && (ctx.headers.top || ctx.headers.bottom),
+  );
+  let headerRules = "";
+  if (ctx.headers?.top) headerRules += boxesRules(ctx.headers.top, ctx);
+  if (ctx.headers?.bottom) headerRules += bottomBoxesRules(ctx.headers.bottom, ctx);
+  const marginBoxes = hasCustomHeaders
+    ? headerRules
+    : `${topContentValue ? `@top-center { ${topContentValue} font-size: 9pt; color: #444; }` : ""}${
+        bottomBox ? `@bottom-center { content: ${cssQuote(bottomBox)}; font-size: 9pt; color: #444; }` : ""
+      }`;
 
   const paragraphStart =
     theme.paragraphStart === "indent"
@@ -116,8 +205,7 @@ u { text-decoration: underline; }`;
 @page {
   size: ${size};
   margin: ${marginSpec};
-  ${topContentValue ? `@top-center { ${topContentValue} font-size: 9pt; color: #444; }` : ""}
-  ${bottomBox ? `@bottom-center { content: ${cssQuote(bottomBox)}; font-size: 9pt; color: #444; }` : ""}
+${marginBoxes}
 }
 
 html, body { margin: 0; padding: 0; background: #fff; }

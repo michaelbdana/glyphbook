@@ -2,6 +2,32 @@ export type PrintKind = "paperback" | "hardcover" | "largePrint";
 export type PrintInk = "bw" | "standardColor" | "premiumColor";
 export type PrintPaper = "white" | "cream" | "groundwood";
 
+export type HeaderBox = {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+};
+
+export type HeaderBoxes = {
+  left?: HeaderBox;
+  center?: HeaderBox;
+  right?: HeaderBox;
+};
+
+export type PrintHeaderFooter = {
+  header?: HeaderBoxes;
+  footer?: HeaderBoxes;
+};
+
+export const HEADER_MACROS: { token: string; label: string }[] = [
+  { token: "{page}", label: "Page number" },
+  { token: "{total}", label: "Total pages" },
+  { token: "{book}", label: "Book title" },
+  { token: "{author}", label: "Author name" },
+  { token: "{chapter}", label: "Chapter title" },
+];
+
 export type BookPrint = {
   id: string;
   kind: PrintKind;
@@ -18,6 +44,7 @@ export type BookPrint = {
   fontSizePt?: number;
   lineHeight?: number;
   justify?: boolean;
+  headerFooter?: PrintHeaderFooter;
 };
 
 export type TrimOption = { label: string; widthIn: number; heightIn: number };

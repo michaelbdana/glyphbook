@@ -57,4 +57,52 @@ describe("print versions", () => {
     expect(clean.prints![0].trimWidthIn).toBeGreaterThan(0);
     expect(clean.prints![0].trimHeightIn).toBeGreaterThan(0);
   });
+
+  it("compiles print-only header/footer margin boxes with macros", () => {
+    const css = compilePrintCss(DEFAULT_THEME, {
+      bookTitle: "My Book",
+      authorName: "Jane Doe",
+      headers: {
+        top: {
+          left: { text: "{book}", italic: true },
+          center: { text: "Chapter {chapter}" },
+        },
+        bottom: {
+          center: { text: "{page} of {total}", bold: true },
+          right: { text: "{author}" },
+        },
+      },
+    });
+    expect(css).toContain("@top-left");
+    expect(css).toContain("@top-center");
+    expect(css).toContain("counter(page)");
+    expect(css).toContain("counter(pages)");
+    expect(css).toContain("string(chapter)");
+    expect(css).toContain("My Book");
+    expect(css).toContain("Jane Doe");
+    expect(css).toContain("font-weight: bold");
+    expect(css).toContain("@bottom-right");
+  });
+
+  it("falls back to theme headers when no print header/footer is set", () => {
+    const css = compilePrintCss(
+      { ...DEFAULT_THEME, pageNumber: "footer", runningHeader: "bookTitle" },
+      { bookTitle: "My Book" },
+    );
+    expect(css).toContain("@bottom-center");
+    expect(css).toContain("counter(page)");
+  });
+
+  it("round-trips print header/footer through validation", () => {
+    const book = buildSampleBook();
+    book.prints = defaultPrints();
+    book.prints[0].headerFooter = {
+      header: { right: { text: "{page}", bold: true } },
+      footer: { center: { text: "{book}" } },
+    };
+    const clean = sanitizeBook(JSON.parse(JSON.stringify(book)))!;
+    expect(clean.prints![0].headerFooter?.header?.right?.text).toBe("{page}");
+    expect(clean.prints![0].headerFooter?.header?.right?.bold).toBe(true);
+    expect(clean.prints![0].headerFooter?.footer?.center?.text).toBe("{book}");
+  });
 });

@@ -41,9 +41,17 @@ function chapterHtml(book: Book): string {
     .join("\n");
 }
 
-function injectThemeCss(theme: BookTheme, bookTitle: string, bleed: boolean): void {
+function injectThemeCss(
+  theme: BookTheme,
+  ctx: { bookTitle: string; bleed: boolean; authorName: string; headers?: unknown },
+): void {
   const style = document.createElement("style");
-  style.textContent = compilePrintCss(theme, { bookTitle, bleed });
+  style.textContent = compilePrintCss(theme, {
+    bookTitle: ctx.bookTitle,
+    bleed: ctx.bleed,
+    authorName: ctx.authorName,
+    headers: ctx.headers as never,
+  });
   document.head.appendChild(style);
 }
 
@@ -57,7 +65,12 @@ async function run(): Promise<void> {
   container.innerHTML = chapterHtml(book);
 
   const setup = await window.glyphbook.getPdfSetup();
-  injectThemeCss(setup.theme, setup.bookTitle, setup.bleed);
+  injectThemeCss(setup.theme, {
+    bookTitle: setup.bookTitle,
+    bleed: setup.bleed,
+    authorName: setup.authorName,
+    headers: setup.headers,
+  });
 
   const previewer = new Previewer();
   const flow = await previewer.preview();

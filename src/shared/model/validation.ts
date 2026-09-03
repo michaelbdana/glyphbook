@@ -16,6 +16,9 @@ import {
   defaultPrint,
   printKindLabel,
   type BookPrint,
+  type HeaderBox,
+  type HeaderBoxes,
+  type PrintHeaderFooter,
   type PrintInk,
   type PrintKind,
   type PrintPaper,
@@ -266,6 +269,36 @@ function booleanOr(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
 }
 
+function sanitizeBox(value: unknown): HeaderBox | null {
+  if (!isRecord(value)) return null;
+  if (typeof value.text !== "string") return null;
+  const box: HeaderBox = { text: value.text };
+  for (const key of ["bold", "italic", "underline"] as const) {
+    if (typeof value[key] === "boolean") box[key] = value[key];
+  }
+  return box;
+}
+
+function sanitizeBoxes(value: unknown): HeaderBoxes | undefined {
+  if (!isRecord(value)) return undefined;
+  const boxes: HeaderBoxes = {};
+  for (const side of ["left", "center", "right"] as const) {
+    const box = sanitizeBox(value[side]);
+    if (box) boxes[side] = box;
+  }
+  return Object.keys(boxes).length ? boxes : undefined;
+}
+
+function sanitizeHeaderFooter(value: unknown): PrintHeaderFooter | undefined {
+  if (!isRecord(value)) return undefined;
+  const result: PrintHeaderFooter = {};
+  const header = sanitizeBoxes(value.header);
+  const footer = sanitizeBoxes(value.footer);
+  if (header) result.header = header;
+  if (footer) result.footer = footer;
+  return Object.keys(result).length ? result : undefined;
+}
+
 function sanitizePrint(value: unknown): BookPrint | null {
   if (!isRecord(value)) return null;
   const kind: PrintKind = PRINT_KINDS.has(value.kind as PrintKind)
@@ -302,6 +335,8 @@ function sanitizePrint(value: unknown): BookPrint | null {
     print.lineHeight = Math.max(1, Math.min(3, value.lineHeight));
   }
   if (typeof value.justify === "boolean") print.justify = value.justify;
+  const headerFooter = sanitizeHeaderFooter(value.headerFooter);
+  if (headerFooter) print.headerFooter = headerFooter;
   return print;
 }
 

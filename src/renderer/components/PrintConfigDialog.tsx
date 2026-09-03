@@ -1,9 +1,31 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { X } from "lucide-react";
-import type { BookPrint, PrintInk, PrintPaper } from "../../shared/model/prints";
-import { printKindLabel, trimOptions } from "../../shared/model/prints";
+import type {
+  BookPrint,
+  HeaderBox,
+  PrintInk,
+  PrintPaper,
+} from "../../shared/model/prints";
+import {
+  HEADER_MACROS,
+  printKindLabel,
+  trimOptions,
+} from "../../shared/model/prints";
 import type { BookTheme } from "../../shared/model/theme";
+
+const SIDE_KEYS = ["left", "center", "right"] as const;
+type Side = (typeof SIDE_KEYS)[number];
+
+function emptyBox(): HeaderBox {
+  return { text: "" };
+}
+
+function boxFrom(value: HeaderBox | undefined): HeaderBox {
+  return value
+    ? { text: value.text, bold: value.bold, italic: value.italic, underline: value.underline }
+    : emptyBox();
+}
 
 type Props = {
   print: BookPrint;
@@ -46,6 +68,37 @@ export default function PrintConfigDialog({ print, baseTheme, onSave, onClose }:
   );
   const [justify, setJustify] = useState(print.justify ?? baseTheme.justify);
 
+  const initialHf = print.headerFooter;
+  const [boxes, setBoxes] = useState<{
+    header: Record<Side, HeaderBox>;
+    footer: Record<Side, HeaderBox>;
+  }>({
+    header: {
+      left: boxFrom(initialHf?.header?.left),
+      center: boxFrom(initialHf?.header?.center),
+      right: boxFrom(initialHf?.header?.right),
+    },
+    footer: {
+      left: boxFrom(initialHf?.footer?.left),
+      center: boxFrom(initialHf?.footer?.center),
+      right: boxFrom(initialHf?.footer?.right),
+    },
+  });
+
+  const updateBox = (
+    section: "header" | "footer",
+    side: Side,
+    patch: Partial<HeaderBox>,
+  ) => {
+    setBoxes((prev) => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [side]: { ...prev[section][side], ...patch },
+      },
+    }));
+  };
+
   const number = (value: string, fallback: number): number => {
     const n = Number(value);
     return Number.isFinite(n) && n > 0 ? n : fallback;
@@ -57,6 +110,37 @@ export default function PrintConfigDialog({ print, baseTheme, onSave, onClose }:
   );
 
   const commit = () => {
+    const hf: BookPrint["headerFooter"] = {};
+    const sideHas = (section: "header" | "footer") =>
+      SIDE_KEYS.some((side) => boxes[section][side].text.trim().length > 0);
+    if (sideHas("header")) {
+      hf.header = {};
+      for (const side of SIDE_KEYS) {
+        const box = boxes.header[side];
+        if (box.text.trim().length > 0) {
+          hf.header[side] = {
+            text: box.text,
+            bold: box.bold || undefined,
+            italic: box.italic || undefined,
+            underline: box.underline || undefined,
+          };
+        }
+      }
+    }
+    if (sideHas("footer")) {
+      hf.footer = {};
+      for (const side of SIDE_KEYS) {
+        const box = boxes.footer[side];
+        if (box.text.trim().length > 0) {
+          hf.footer[side] = {
+            text: box.text,
+            bold: box.bold || undefined,
+            italic: box.italic || undefined,
+            underline: box.underline || undefined,
+          };
+        }
+      }
+    }
     onSave({
       ...print,
       label: label.trim() || printKindLabel(print.kind),
@@ -72,13 +156,17 @@ export default function PrintConfigDialog({ print, baseTheme, onSave, onClose }:
       fontSizePt: number(fontSize, baseTheme.bodyFontSizePt),
       lineHeight: number(lineHeight, baseTheme.lineHeight),
       justify,
+      headerFooter:
+        hf.header || hf.footer
+          ? hf
+          : undefined,
     });
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30" onClick={onClose}>
-      <div className="flex max-h-[85vh] w-[560px] flex-col rounded-lg border border-rule bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex max-h-[90vh] w-[880px] flex-col rounded-lg border border-rule bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-rule px-5 py-3">
           <div>
             <h2 className="text-lg font-semibold">{printKindLabel(print.kind)} Setup</h2>
@@ -89,7 +177,7 @@ export default function PrintConfigDialog({ print, baseTheme, onSave, onClose }:
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 overflow-y-auto px-5 py-4">
+        <div className="grid min-h-0 flex-1 grid-cols-2 gap-x-6 gap-y-4 overflow-y-auto px-6 py-5">
           <Field label="Version name">
             <input value={label} onChange={(e) => setLabel(e.target.value)} className={inputClass} />
           </Field>
@@ -169,6 +257,71 @@ export default function PrintConfigDialog({ print, baseTheme, onSave, onClose }:
               Justify text
             </label>
           </div>
+
+          {(["header", "footer"] as const).map((section) => (
+            <div key={section} className="col-span-2">
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-sm font-semibold capitalize">{section}</span>
+                <span className="rounded bg-chrome-dark px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted">
+                  Print only
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                {SIDE_KEYS.map((side) => {
+                  const box = boxes[section][side];
+                  return (
+                    <div key={side} className="flex flex-col gap-1.5">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+                        {side}
+                      </span>
+                      <input
+                        value={box.text}
+                        onChange={(e) => updateBox(section, side, { text: e.target.value })}
+                        placeholder="Text or {page} {chapter} …"
+                        className={`${inputClass} w-full`}
+                      />
+                      <div className="flex flex-wrap items-center gap-1">
+                        {HEADER_MACROS.map((m) => (
+                          <button
+                            key={m.token}
+                            onClick={() =>
+                              updateBox(section, side, { text: `${box.text}${m.token}` })
+                            }
+                            title={`Insert ${m.label}`}
+                            className="rounded border border-rule px-1.5 py-0.5 font-mono text-[10px] text-muted hover:bg-chrome"
+                          >
+                            {m.token}
+                          </button>
+                        ))}
+                        <span className="mx-1 h-4 w-px bg-rule" />
+                        {(
+                          [
+                            ["bold", "B"],
+                            ["italic", "I"],
+                            ["underline", "U"],
+                          ] as const
+                        ).map(([key, letter]) => (
+                          <button
+                            key={key}
+                            onClick={() =>
+                              updateBox(section, side, { [key]: !box[key] })
+                            }
+                            className={`rounded px-2 py-0.5 text-xs font-bold ${
+                              box[key]
+                                ? "bg-accent text-white"
+                                : "border border-rule text-muted hover:bg-chrome"
+                            }`}
+                          >
+                            {letter}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="flex justify-end gap-2 border-t border-rule px-5 py-3">

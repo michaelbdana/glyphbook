@@ -5,7 +5,7 @@ import { IPC } from "../src/shared/ipc";
 import { buildSampleBook } from "../src/shared/model/sample";
 import { validateLibrary } from "../src/shared/model/validation";
 import type { Book } from "../src/shared/model/types";
-import { mergeTheme, type BookTheme } from "../src/shared/model/theme";
+import { mergeTheme } from "../src/shared/model/theme";
 import {
   applyPrintToTheme,
   type BookPrint,
@@ -33,13 +33,20 @@ if (tmpUserData) {
 let pendingPdfBook: Book = buildSampleBook();
 let pendingPdfPrint: BookPrint | null = null;
 
-function pdfSetup(): { theme: BookTheme; bleed: boolean; bookTitle: string } {
+function pdfSetup() {
   const base = mergeTheme(pendingPdfBook.themeName, pendingPdfBook.theme);
   const theme = pendingPdfPrint ? applyPrintToTheme(base, pendingPdfPrint) : base;
   return {
     theme,
     bleed: pendingPdfPrint?.bleed ?? false,
     bookTitle: pendingPdfBook.title,
+    authorName: pendingPdfBook.author,
+    headers: pendingPdfPrint?.headerFooter
+      ? {
+          top: pendingPdfPrint.headerFooter.header,
+          bottom: pendingPdfPrint.headerFooter.footer,
+        }
+      : undefined,
   };
 }
 

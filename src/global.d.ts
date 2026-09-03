@@ -1,9 +1,15 @@
 import type { Book } from "./shared/model/types";
 import type { EditorSettings } from "./shared/settings";
-import type { BookPrint } from "./shared/model/prints";
+import type { BookPrint, HeaderBoxes } from "./shared/model/prints";
 import type { BookTheme } from "./shared/model/theme";
 
-export type PdfSetup = { theme: BookTheme; bleed: boolean; bookTitle: string };
+export type PdfSetup = {
+  theme: BookTheme;
+  bleed: boolean;
+  bookTitle: string;
+  authorName: string;
+  headers?: { top?: HeaderBoxes; bottom?: HeaderBoxes };
+};
 
 export type SaveResult = { ok: boolean; path?: string; error?: string };
 
