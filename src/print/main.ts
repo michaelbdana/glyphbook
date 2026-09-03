@@ -17,7 +17,10 @@ function chapterHtml(book: Book): string {
     .map((chapter, index) => {
       const isFirst = index === 0;
 
-      if (chapter.kind === "fullpage" && chapter.image?.src) {
+      if (
+        (chapter.kind === "fullpage" || chapter.kind === "cover") &&
+        chapter.image?.src
+      ) {
         const img = chapter.image;
         return `
 <section class="chapter${isFirst ? " first" : ""} fullpage" data-chapter="image">

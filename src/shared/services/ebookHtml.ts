@@ -140,7 +140,10 @@ export function ebookChapterHtml(
   _first: boolean,
   includeHeading = true,
 ): string {
-  if (chapter.kind === "fullpage" && chapter.image?.src) {
+  if (
+    (chapter.kind === "fullpage" || chapter.kind === "cover") &&
+    chapter.image?.src
+  ) {
     return `<div style="text-align:center;margin:1.2em 0">${figure(
       chapter.image,
       true,

@@ -298,7 +298,15 @@ export async function parseDocx(
   const cover = await extractCover(zip, xml);
 
   const now = new Date().toISOString();
-  const front: Chapter[] = standardFront();
+  const front: Chapter[] = [];
+  if (cover?.src) {
+    front.push({
+      ...emptyChapter("Cover", "front"),
+      kind: "cover",
+      image: { src: cover.src, alt: "" },
+    });
+  }
+  front.push(...standardFront());
 
   const bodyChapters: Chapter[] = chapters
     .filter((c) => c.section === "body")

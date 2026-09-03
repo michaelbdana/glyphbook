@@ -3,7 +3,30 @@ import type { Book } from "../../src/shared/model/types";
 import type { BookTheme } from "../../src/shared/model/theme";
 import { mergeTheme } from "../../src/shared/model/theme";
 import { ebookChapterHtml } from "../../src/shared/services/ebookHtml";
+import { epubProfile, type EpubProfileId } from "../../src/shared/model/epubProfiles";
 import { escapeXml } from "../xml";
+
+export type EpubExportOptions = {
+  profile?: EpubProfileId;
+};
+
+function coverFileInfo(src: string): { name: string; mime: string } | null {
+  const match = src.match(/^data:([^;]+);base64,/);
+  if (!match) return null;
+  const mime = match[1];
+  const ext =
+    mime === "image/png"
+      ? "png"
+      : mime === "image/gif"
+        ? "gif"
+        : mime === "image/webp"
+          ? "webp"
+          : mime === "image/jpeg"
+            ? "jpg"
+            : null;
+  if (!ext) return null;
+  return { name: `cover.${ext}`, mime };
+}
 
 function ebookCss(theme: BookTheme): string {
   const para =
@@ -34,9 +57,15 @@ function spineChapters(book: Book): Book["chapters"] {
   );
 }
 
-export async function buildEpubBuffer(book: Book): Promise<Buffer> {
+export async function buildEpubBuffer(
+  book: Book,
+  options: EpubExportOptions = {},
+): Promise<Buffer> {
+  const profile = epubProfile(options.profile ?? "generic");
   const theme = mergeTheme(book.themeName, book.theme);
-  const chapters = spineChapters(book);
+  const chapters = spineChapters(book).filter(
+    (c) => profile.includeCoverPage || c.kind !== "cover",
+  );
   const zip = new JSZip();
 
   zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
@@ -67,7 +96,10 @@ export async function buildEpubBuffer(book: Book): Promise<Buffer> {
 </html>`;
     zip.file(`OEBPS/${href}`, html);
 
-    const showInToc = !chapter.options?.hideToc && (chapter.options?.includeIn ?? "all") !== "none";
+    const showInToc =
+      chapter.kind !== "cover" &&
+      !chapter.options?.hideToc &&
+      (chapter.options?.includeIn ?? "all") !== "none";
     manifestItems.push(`<item id="${id}" href="${href}" media-type="application/xhtml+xml"/>`);
     spine.push(`<itemref idref="${id}"/>`);
     if (showInToc) {
@@ -76,6 +108,24 @@ export async function buildEpubBuffer(book: Book): Promise<Buffer> {
   <content src="${href}"/></navPoint>`);
     }
   });
+
+  const coverSrc =
+    book.cover?.src ??
+    chapters.find((c) => c.kind === "cover")?.image?.src;
+  let coverMeta = "";
+  if (coverSrc) {
+    const info = coverFileInfo(coverSrc);
+    if (info) {
+      const data = coverSrc.split(",")[1];
+      if (data) {
+        zip.file(`OEBPS/${info.name}`, Buffer.from(data, "base64"));
+        manifestItems.push(
+          `<item id="cover-img" href="${info.name}" media-type="${info.mime}" properties="cover-image"/>`,
+        );
+        coverMeta = '<meta name="cover" content="cover-img"/>';
+      }
+    }
+  }
 
   zip.file(
     "OEBPS/style.css",
@@ -95,6 +145,7 @@ export async function buildEpubBuffer(book: Book): Promise<Buffer> {
     <dc:title>${escapeXml(book.title)}</dc:title>
     <dc:creator>${escapeXml(book.author)}</dc:creator>
     <dc:language>en</dc:language>
+    ${coverMeta}
     <meta property="dcterms:modified">${new Date().toISOString().replace(/\.\d+Z$/, "Z")}</meta>
   </metadata>
   <manifest>
@@ -109,6 +160,7 @@ export async function buildEpubBuffer(book: Book): Promise<Buffer> {
   const navHtml = chapters
     .map((chapter, index) => {
       const showInToc =
+        chapter.kind !== "cover" &&
         !chapter.options?.hideToc &&
         (chapter.options?.includeIn ?? "all") !== "none";
       return showInToc

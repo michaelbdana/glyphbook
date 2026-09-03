@@ -36,6 +36,7 @@ const KIND_OPTIONS: { value: ChapterKind; label: string }[] = (() => {
   };
   push("page", "Plain Page");
   push("chapter", "Chapter");
+  push("cover", "Cover Page");
   push("title", "Title Page");
   push("copyright", "Copyright Page");
   push("toc", "Table of Contents");

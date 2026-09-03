@@ -6,6 +6,7 @@ import { usePersistedWidth } from "../state/usePersistedWidth";
 import ResizeHandle from "../components/PaneResize";
 import BookPreview from "../components/BookPreview";
 import ImageCalcDialog from "../components/ImageCalcDialog";
+import ExportEpubDialog from "../components/ExportEpubDialog";
 import {
   FONT_FAMILIES,
   HEADING_FAMILIES,
@@ -49,6 +50,7 @@ export default function FormattingScreen() {
   const setScreen = useStore((s) => s.setScreen);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [calcOpen, setCalcOpen] = useState(false);
+  const [epubOpen, setEpubOpen] = useState(false);
   const [exportBusy, setExportBusy] = useState<string | null>(null);
   const [previewWidth, setPreviewWidth] = usePersistedWidth(
     "glyph.formatting.preview",
@@ -78,15 +80,13 @@ export default function FormattingScreen() {
     updateBook(book.id, { theme });
   };
 
-  const exportFile = (kind: "epub" | "pdf" | "docx") => {
+  const exportFile = (kind: "pdf" | "docx") => {
     if (exportBusy) return;
     setExportBusy(kind);
     const job =
-      kind === "epub"
-        ? window.glyphbook.exportEpub(book)
-        : kind === "docx"
-          ? window.glyphbook.exportDocx(book)
-          : window.glyphbook.exportPdf(book).then(() => undefined);
+      kind === "docx"
+        ? window.glyphbook.exportDocx(book)
+        : window.glyphbook.exportPdf(book).then(() => undefined);
     void job.finally(() => setExportBusy(null));
   };
 
@@ -123,10 +123,17 @@ export default function FormattingScreen() {
           {(["pdf", "epub", "docx"] as const).map((kind) => (
             <button
               key={kind}
-              onClick={() => exportFile(kind)}
+              onClick={() => {
+                if (kind === "epub") setEpubOpen(true);
+                else exportFile(kind);
+              }}
               disabled={exportBusy !== null}
               className="rounded-md border border-rule px-3 py-1 text-xs font-medium uppercase disabled:opacity-50"
-              title={`Export ${kind.toUpperCase()} to your exports folder`}
+              title={
+                kind === "epub"
+                  ? "Export store-specific ePub versions"
+                  : `Export ${kind.toUpperCase()} to your exports folder`
+              }
             >
               {exportBusy === kind ? "Working…" : kind}
             </button>
@@ -223,6 +230,10 @@ export default function FormattingScreen() {
           outsideMarginIn={effectiveTheme.marginOutsideIn}
           onClose={() => setCalcOpen(false)}
         />
+      )}
+
+      {epubOpen && (
+        <ExportEpubDialog book={book} onClose={() => setEpubOpen(false)} />
       )}
     </div>
   );

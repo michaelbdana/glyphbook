@@ -20,7 +20,10 @@ export type GlyphbookApi = {
   setSpellCheck: (enabled: boolean) => Promise<boolean>;
   pickImage: () => Promise<ImagePickResult>;
   exportPdf: (book: Book) => Promise<number>;
-  exportEpub: (book: Book) => Promise<SaveResult>;
+  exportEpub: (
+    book: Book,
+    options?: { profile?: string; quiet?: boolean },
+  ) => Promise<SaveResult>;
   exportDocx: (book: Book) => Promise<SaveResult>;
   importDocx: () => Promise<Book | null>;
 };

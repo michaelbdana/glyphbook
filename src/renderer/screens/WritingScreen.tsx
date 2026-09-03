@@ -449,7 +449,7 @@ export default function WritingScreen() {
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-10 py-6">
               {chapter ? (
-                chapter.kind === "fullpage" ? (
+                chapter.kind === "fullpage" || chapter.kind === "cover" ? (
                   <FullPageEditor
                     chapter={chapter}
                     onUpdate={(image) =>

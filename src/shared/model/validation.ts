@@ -35,6 +35,7 @@ const KINDS = new Set<ChapterKind>([
   "about",
   "alsoby",
   "fullpage",
+  "cover",
 ]);
 const INCLUDE_IN = new Set(["all", "ebook", "print", "none"]);
 const BEGIN_ON = new Set(["auto", "left", "right"]);

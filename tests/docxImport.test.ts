@@ -71,6 +71,9 @@ describe.skipIf(!hasFixture)("docx import", () => {
     expect(body.length).toBeGreaterThanOrEqual(28);
 
     expect(book.cover?.src).toMatch(/^data:image\/jpeg;base64,/);
+    const firstFront = book.chapters.find((c) => c.section === "front");
+    expect(firstFront?.kind).toBe("cover");
+    expect(firstFront?.image?.src).toBe(book.cover?.src);
 
     const titles = body.map((c) => c.title);
     expect(titles[0]).toBe("Chapter One");

@@ -93,7 +93,8 @@ export type ChapterKind =
   | "acknowledgements"
   | "about"
   | "alsoby"
-  | "fullpage";
+  | "fullpage"
+  | "cover";
 
 export type Chapter = {
   id: string;

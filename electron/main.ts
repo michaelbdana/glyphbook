@@ -15,6 +15,7 @@ import type { EditorSettings } from "../src/shared/settings";
 import { buildEpubBuffer } from "./exporters/epub";
 import { buildDocxBuffer } from "./exporters/docx";
 import { parseDocx } from "./importers/docx";
+import { EPUB_PROFILES } from "../src/shared/model/epubProfiles";
 
 let mainWindow: BrowserWindow | null = null;
 let printWindow: BrowserWindow | null = null;
@@ -138,15 +139,17 @@ function registerIpc(): void {
     return win.id;
   });
 
-  ipcMain.handle(IPC.exportEpub, async (_event, book: Book) => {
-    const buffer = await buildEpubBuffer(book);
+  ipcMain.handle(IPC.exportEpub, async (_event, book: Book, options?: { profile?: string; quiet?: boolean }) => {
+    const profile = EPUB_PROFILES.find((p) => p.id === options?.profile) ?? EPUB_PROFILES[5];
+    const buffer = await buildEpubBuffer(book, { profile: profile.id });
     await fs.mkdir(exportsDir(), { recursive: true });
     const outPath = path.join(
       exportsDir(),
-      `${safeFileName(book.title)}.epub`,
+      `${safeFileName(book.title)}-${profile.fileNameSuffix}.epub`,
     );
     await fs.writeFile(outPath, buffer);
-    return announceExport("ePub", outPath);
+    if (options?.quiet) return { ok: true as const, path: outPath };
+    return announceExport(`${profile.label} ePub`, outPath);
   });
 
   ipcMain.handle(IPC.exportDocx, async (_event, book: Book) => {

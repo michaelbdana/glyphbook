@@ -26,6 +26,7 @@ export type Preset = {
 };
 
 export const PRESETS: Preset[] = [
+  { key: "cover", label: "Cover Page", section: "front", title: "Cover", numbered: false },
   { key: "title", label: "Title Page", section: "front", title: "Title Page", numbered: false },
   { key: "copyright", label: "Copyright Page", section: "front", title: "Copyright", numbered: false },
   { key: "toc", label: "Table of Contents", section: "front", title: "Table of Contents", numbered: false },
