@@ -1,8 +1,8 @@
-# Atticus.io — Complete Feature Specification
+# Feature Reference — Complete Feature Specification
 
-Compiled from the public Atticus website (www.atticus.io): homepage, changelog ("Atticus Updates"), all ~50 tutorial pages, tutorials index, pricing page, and the public Notion feature roadmap.
+Compiled from the public website of the reference product: its homepage, changelog, tutorials, pricing, and public feature roadmap.
 
-This document is intended as the reference spec for building a new book-writing and book-formatting application. Atticus is a one-time-purchase, cross-platform **Progressive Web App (PWA)** that combines a distraction-light word processor, a manuscript/print/eBook formatter, and an exporter into a single tool built for fiction and non-fiction self-publishing authors.
+This document is intended as the reference spec for building a new book-writing and book-formatting application. The reference product is a one-time-purchase, cross-platform **Progressive Web App (PWA)** that combines a distraction-light word processor, a manuscript/print/eBook formatter, and an exporter into a single tool built for fiction and non-fiction self-publishing authors.
 
 ---
 
@@ -21,14 +21,14 @@ This document is intended as the reference spec for building a new book-writing 
 ## 2. Access, Platform & Install
 
 ### 2.1 Access methods
-- Web app entry point: **app.atticus.io** (login with email + password). The website's buy link is on ThriveCart; after purchase an account-creation email ("Create Your Atticus Account") arrives (~10 min), containing a "Get Started with Atticus" button that lets the buyer set a password (login is always the email address).
+- Web app entry point: **the reference app address** (login with email + password). The website's buy link is on ThriveCart; after purchase an account-creation email ("Create Your the reference product Account") arrives (~10 min), containing a "Get Started with the reference product" button that lets the buyer set a password (login is always the email address).
 - **Two ways to use:**
   1. Directly in a web browser on any device.
   2. As an **installed PWA** (standalone window) — appears in the OS taskbar/dock/home screen/apps folder like a native app, launched without opening a browser.
 - **Installation (PWA):**
-  - Desktop (Win/Mac/Chromebook/Linux): in Chrome, go to app.atticus.io → click the in-app "Install" button (top right) or the browser URL-bar install icon → confirm. Mac: file lands in Chrome Apps; drag into Applications or taskbar. Windows: drag to desktop. Right-click taskbar/dock icon → Pin.
-  - iOS (iPad/iPhone): Safari → app.atticus.io → Share → **Add to Home Screen** → name it → Done.
-  - Android: Chrome → app.atticus.io → bottom popup "Add Atticus to Home Screen" → Install; fallback = three-dot menu → Add to Home Screen.
+  - Desktop (Win/Mac/Chromebook/Linux): in Chrome, go to the reference app address → click the in-app "Install" button (top right) or the browser URL-bar install icon → confirm. Mac: file lands in Chrome Apps; drag into Applications or taskbar. Windows: drag to desktop. Right-click taskbar/dock icon → Pin.
+  - iOS (iPad/iPhone): Safari → the reference app address → Share → **Add to Home Screen** → name it → Done.
+  - Android: Chrome → the reference app address → bottom popup "Add the reference product to Home Screen" → Install; fallback = three-dot menu → Add to Home Screen.
 - **Browser guidance:** Chrome strongly recommended (desktop + Android); Safari on iOS; Edge explicitly **not recommended** (known issues).
 - Installed app is "always tied to your browser" but opens standalone; syncs automatically.
 
@@ -89,7 +89,7 @@ This document is intended as the reference spec for building a new book-writing 
 ## 4. Import
 
 ### 4.1 Supported import formats
-- **.docx** (Microsoft Word / Google Docs) — the primary and effectively only supported full-import format. "Atticus currently cannot import your book unless it is .docx."
+- **.docx** (Microsoft Word / Google Docs) — the primary and effectively only supported full-import format. "the reference product currently cannot import your book unless it is .docx."
 - Historically also: **.rtf import** and **ePub import** and "mobi import (not perfect but functional as a last resort)" appear in the changelog; the current docs emphasize .docx.
 - **Drag-and-drop .docx into an existing book** (imports additional chapters into an open book) is supported.
 - Import UI: Upload a Book dialog — browse **or** drag-and-drop; requires a Title and Author; optional Project Name.
@@ -103,9 +103,9 @@ This document is intended as the reference spec for building a new book-writing 
 - Non-default Word styles (Emphasis, Strong, etc.) do **not** import — they flatten to plain text; only direct formatting (italic/bold applied via the font menu) survives.
 
 ### 4.3 Import preparation guidance (product behavior worth replicating)
-- Delete existing front matter (title page, copyright, TOC) before import — Atticus **auto-generates Title Page, Copyright Page, and a fully auto-linked Table of Contents** for every book.
-- Remove hyperlinks before import (Word: Ctrl+A then Ctrl+Shift+F9 ×2 / Mac: Cmd+Fn+Shift+F9 ×2) and re-add inside Atticus (foreign hyperlink coding can block import/export).
-- Remove large/many images before import (insert from inside Atticus later); remove unsupported emojis/symbols/special characters.
+- Delete existing front matter (title page, copyright, TOC) before import — the reference product **auto-generates Title Page, Copyright Page, and a fully auto-linked Table of Contents** for every book.
+- Remove hyperlinks before import (Word: Ctrl+A then Ctrl+Shift+F9 ×2 / Mac: Cmd+Fn+Shift+F9 ×2) and re-add inside the reference product (foreign hyperlink coding can block import/export).
+- Remove large/many images before import (insert from inside the reference product later); remove unsupported emojis/symbols/special characters.
 - Imported manuscript lands in the **Body** section; front/back matter can be drag-and-dropped to their sections afterward; chapters renumber automatically.
 
 ---
@@ -222,7 +222,7 @@ This document is intended as the reference spec for building a new book-writing 
 ### 8.6 Notes settings (see Section 10)
 ### 8.7 Typography / fonts
 - **Body fonts (print/digital):** curated set of 15: Benne, Cardo, Crimson Pro, EB Garamond, Libre Baskerville, Libre Caslon, Lora, Open Sans, OpenDyslexic, PT Sans, Rosario, Source Sans Pro, Spectral, Theano Didot, Young Serif. (Earlier versions advertised "26 fonts"; current is this curated list + Google Fonts for headings.)
-- **Headings/subheadings fonts:** Atticus presets **plus the Google Fonts Library (1,500+ fonts, currently Beta)** via a Font Gallery with Favorites/Library tabs, search, and type filters (sans-serif, serif, handwriting, display, monospace). Favorite a font to add it to theme dropdowns.
+- **Headings/subheadings fonts:** the reference product presets **plus the Google Fonts Library (1,500+ fonts, currently Beta)** via a Font Gallery with Favorites/Library tabs, search, and type filters (sans-serif, serif, handwriting, display, monospace). Favorite a font to add it to theme dropdowns.
 - Body font size, line spacing, and font family universal; per-element styles for headings; font-style options (bold/italic, weights) in custom themes.
 - **Large Print setting** — one toggle auto-configures font, font size, line spacing, and ragged-right alignment to international large-print accessibility standards.
 - No user font uploads yet (roadmap/licensing research).
@@ -232,7 +232,7 @@ This document is intended as the reference spec for building a new book-writing 
 - **Layout priority algorithm** (bottom-of-page balancing), three modes:
   1. **Widows & Orphans** (cleanest narrative flow; for novels, memoirs, short stories, poetry).
   2. **Balanced Page Spread** (layout-heavy/modular content: nonfiction, lists, callouts, images, journals/planners).
-  3. **Best of Both** (hybrid Atticus algorithm, general-purpose).
+  3. **Best of Both** (hybrid the reference product algorithm, general-purpose).
 - **Keep options** (keep scene-break images / subheadings with following content).
 - Widow/orphan handling vs. page-balance priority toggle (older setting superseded by the three modes).
 
@@ -272,7 +272,7 @@ This document is intended as the reference spec for building a new book-writing 
 
 ## 11. Writing Goals, Habits & Focus Tools
 
-- **Book Goal:** total target word count + due date + committed writing days → Atticus calculates required words per writing day.
+- **Book Goal:** total target word count + due date + committed writing days → the reference product calculates required words per writing day.
 - **Writing Habit Tracker:** words-per-day target (can reference the Book Goal calc), committed days; calendar shows colored day-boxes for goals met; day icon changes from snowflake → flame when the daily goal is hit; tracks percentages, current streak, longest streak, and past months' daily counts.
 - **Sprint Timer:** timed writing session + break interval between sprints (e.g., 50 min write / 10 min break).
 - **Writing Preferences** (Editor Settings): personal font/font size/line-height/paragraph indent-vs-space/justify. Per-account, not shared, display-only.
@@ -305,7 +305,7 @@ This document is intended as the reference spec for building a new book-writing 
 - On-site/companion **image-size calculators** consider trim, bleed, margins:
   - Full-bleed single page: Width = Trim W + 0.125″; Height = Trim H + 0.25″; px = in × PPI (300 for print).
   - In-chapter (fit within margins): Width = Trim W − (Inside + Outside margin); px = in × PPI.
-- Cover-size references: KDP Kindle eBook cover 2,560×1,600 px; Apple Books 2,400×1,600 px (or ~4M px total). Print cover (with spine/back) is created externally, not in Atticus.
+- Cover-size references: KDP Kindle eBook cover 2,560×1,600 px; Apple Books 2,400×1,600 px (or ~4M px total). Print cover (with spine/back) is created externally, not in the reference product.
 
 ---
 
@@ -329,7 +329,7 @@ This document is intended as the reference spec for building a new book-writing 
 - ePub export runs in the browser; must allow pop-ups. PDF export renders the book then signals ready ("green light") to download.
 - Export buttons: under the Previewer in the Formatting tab; also at the bottom of Writing-tab Book Details.
 - ePub includes the auto-coded NCX/navigational TOC and internal links; export validated (epub validation protections/error diagnostics; roadmap: "Export Failure Diagnostics System").
-- ePub metadata identifies Atticus (BookFunnel-compatible).
+- ePub metadata identifies the reference product (BookFunnel-compatible).
 
 ### 14.2 Publishing-market compatibility
 - Exports are publish-ready for: Amazon KDP, Barnes & Noble, Apple Books, Kobo, Draft2Digital, Smashwords, tolino, Scribd, OverDrive/Libby, Google Play, and more. Trim-size color-coding supports KDP vs IngramSpark print checks.
@@ -383,7 +383,7 @@ This document is intended as the reference spec for building a new book-writing 
 
 ---
 
-## 18. Feature Flags / Capability Checklist (homepage "Why Choose Atticus")
+## 18. Feature Flags / Capability Checklist (homepage "Why Choose the reference product")
 
 Cross-platform (Win/Mac/Linux/Chromebook) • Export EPUB, PDF, DOCX • Import DOCX • 17+ chapter themes • 1,500+ fonts • full-bleed images • custom chapter theme builder • volumes and parts • large print (all features) • footnotes • H2–H6 headings • version control (roadmap: coming soon) • callout boxes • cloud storage & backups • boxsets • drag-and-drop chapters • book goals & writing-habit tracker • word counter • scenes • footnotes/endnotes • smart quotes • find & replace • master pages/templates • page breaks • collaboration • drop caps • text messages • call-out boxes • accessibility (alt text) • dark mode.
 
@@ -391,7 +391,7 @@ Cross-platform (Win/Mac/Linux/Chromebook) • Export EPUB, PDF, DOCX • Import 
 
 ## 19. Changelog Highlights (feature history — useful for parity check)
 
-New features by release (from attic.us/updates):
+New features by release (from the product changelog):
 - 2026: image folders; extra header/footer options; extra copyright templates; ePub page-flip/draft mode/full-book view rendering; unique/custom drop caps; dark mode.
 - 2025: alt text/accessibility; import & caching, PDF reliability & security, sync/load-time and stability improvements; copy/paste protections.
 - 2024: **collaboration** (roles/invites/manage edits); search/sort books by title, author, project, version; UI overhaul.

@@ -1,6 +1,6 @@
 # Glyphbook — Application Design & Tech-Stack Document
 
-> Working title: **Glyphbook**. Feature reference: `atticus_features.md` (compiled Atticus feature spec this app is built from).
+> Working title: **Glyphbook**. Feature reference: `feature-reference.md` (compiled the reference product feature spec this app is built from).
 >
 > Status: Design baseline for implementation.
 > Scope: Standalone desktop application. Fully offline. No login, no accounts, no cloud backend.
@@ -9,9 +9,9 @@
 
 ## 1. Purpose
 
-This document defines the application stack and high-level architecture for a new, desktop-only book-writing and book-formatting application (a re-implementation of the feature set documented in `atticus_features.md`).
+This document defines the application stack and high-level architecture for a new, desktop-only book-writing and book-formatting application (a re-implementation of the feature set documented in `feature-reference.md`).
 
-It is the engineering blueprint used to scaffold the project and to guide all implementation decisions. Companion design documents: `atticus_features.md` (product/feature spec) and `UI_UX.md` (interface specification — the UI is to closely mirror Atticus).
+It is the engineering blueprint used to scaffold the project and to guide all implementation decisions. Companion design documents: `feature-reference.md` (product/feature spec) and `UI_UX.md` (interface specification — the UI is to closely mirror the reference product).
 
 ---
 
@@ -39,7 +39,7 @@ Out of scope by decision: cloud sync, online backup, user accounts, web deployme
 4. **Schema-driven editing.** The editor schema *is* the content spec: block types and marks are validated at the source, so malformed documents cannot reach an exporter.
 5. **Deterministic, testable export.** Export pipelines are pure functions over the book model, covered by golden-file tests.
 6. **Simple where possible.** No backend, no database, no auth, no analytics/telemetry.
-7. **Atticus-familiar interface.** The UI intentionally mirrors Atticus's three-screen model and layout so authors already familiar with Atticus feel at home. The full UI/UX specification lives in `UI_UX.md` and is treated as a binding design input.
+7. **the reference product-familiar interface.** The UI intentionally mirrors the reference product's three-screen model and layout so authors already familiar with the reference product feel at home. The full UI/UX specification lives in `UI_UX.md` and is treated as a binding design input.
 
 ---
 
@@ -248,10 +248,10 @@ glyphbook/
 - Inline note nodes carry stable IDs. Print pipeline places notes per theme (foot of page / end of chapter / end of book); EPUB emits `<aside type="footnote">` with backlinks. Note text-size slider is a theme parameter.
 
 ### 9.5 Images
-- In-app ops limited to sizing/compression via Canvas (matches spec: no crop/enlarge). `assets/` holds originals + generated variants; alt text and PPI metadata stored on the node. Pre-import image-size helpers ported from the Atticus calculator.
+- In-app ops limited to sizing/compression via Canvas (matches spec: no crop/enlarge). `assets/` holds originals + generated variants; alt text and PPI metadata stored on the node. Pre-import image-size helpers ported from the the reference product calculator.
 
 ### 9.6 Export validation
-- Before export, run a document validator: unresolved issues (e.g., untitled chapter, invalid note, oversize chapter heuristic) produce user-facing diagnostics instead of a broken file. This maps to Atticus's "export failure diagnostics."
+- Before export, run a document validator: unresolved issues (e.g., untitled chapter, invalid note, oversize chapter heuristic) produce user-facing diagnostics instead of a broken file. This maps to the reference product's "export failure diagnostics."
 
 ---
 

@@ -4,15 +4,15 @@ An offline, desktop book-writing and book-formatting application. Write a manusc
 
 - One-time local install (Windows, macOS, Linux)
 - Fully offline: your books live on your computer (`library.json` + timed snapshots)
-- Atticus-style three-screen workflow: **My Books → Writing → Formatting**
+- the reference product-style three-screen workflow: **My Books → Writing → Formatting**
 
 ## Documentation
 
 | Document | Contents |
 |---|---|
-| [`atticus_features.md`](atticus_features.md) | Compiled feature spec this app is built from |
+| [`feature-reference.md`](feature-reference.md) | Compiled feature spec this app is built from |
 | [`DESIGN.md`](DESIGN.md) | Architecture, tech stack, and milestone log |
-| [`UI_UX.md`](UI_UX.md) | Interface specification (Atticus-similar) |
+| [`UI_UX.md`](UI_UX.md) | Interface specification (the reference product-similar) |
 | [`docs/conformance.md`](docs/conformance.md) | Feature coverage map and known parity gaps |
 
 ## Tech stack

@@ -1,14 +1,14 @@
-# Glyphbook — UI & UX Specification (Atticus-Similar Interface)
+# Glyphbook — UI & UX Specification (the reference product-Similar Interface)
 
-> Working title: **Glyphbook**. Reference: `atticus_features.md`.
+> Working title: **Glyphbook**. Reference: `feature-reference.md`.
 >
-> Binding design input: **the application's user interface must closely mirror Atticus** — its three-screen model, screen layout, interaction patterns, and terminology — so that authors experienced with Atticus can use Glyphbook without retraining. We implement the *interface model and interaction patterns* with our own branding; we do not copy Atticus assets, copy, or screenshots.
+> Binding design input: **the application's user interface must closely mirror the reference product** — its three-screen model, screen layout, interaction patterns, and terminology — so that authors experienced with the reference product can use Glyphbook without retraining. We implement the *interface model and interaction patterns* with our own branding; we do not copy the reference product assets, copy, or screenshots.
 
 ---
 
 ## 1. Screen Model Overview
 
-Atticus is organized around three primary screens plus reusable panels. Glyphbook replicates this model exactly:
+the reference product is organized around three primary screens plus reusable panels. Glyphbook replicates this model exactly:
 
 1. **Library (Home / "My Books" dashboard)** — manage books, master pages, themes; start/upload/duplicate/delete; create boxsets.
 2. **Writing Editor** — write and edit the manuscript (chapters, pages, scenes, notes, images).
@@ -23,7 +23,7 @@ There is **no login, onboarding account screen, or collaboration UI** in Glyphbo
 ## 2. Global Chrome & Navigation Model
 
 ### 2.1 Top-level chrome (shared across screens)
-- **Top center:** primary mode switch — **"Writing" | "Formatting"** (segmented control). Mirrors Atticus's top-center tabs.
+- **Top center:** primary mode switch — **"Writing" | "Formatting"** (segmented control). Mirrors the reference product's top-center tabs.
 - **Top left:** product logo / home button → returns to Library from anywhere (book state preserved).
 - **Top right cluster:** (context-sensitive) **Save/Backup** button with saved-state indicator; **Support/Help** button; **Install/hide (PWA n/a)**; **user/profile** menu (in Glyphbook: app settings, library location, about, **Log out** replaced by *Close/Quit* semantics — no accounts).
 - **Bottom status bar** (Writing screen): saving indicator, word count, sprint timer, and quick actions.
@@ -31,7 +31,7 @@ There is **no login, onboarding account screen, or collaboration UI** in Glyphbo
 ### 2.2 Navigation model
 - Library → open book → Writing editor; switch to Formatting via top-center tabs; return to Library via logo/home.
 - Within a book, the **left navigation pane** is the primary structure navigator (front matter / body / back matter; chapters, scenes, volumes, parts).
-- Standard three-dot (**⋯**) menus on tiles/rows expose secondary actions (Duplicate/Delete, Rename, Sync, Edit-as-New, etc.), matching Atticus's pattern of gear icons (per-page settings) vs. three-dot menus (list-level actions).
+- Standard three-dot (**⋯**) menus on tiles/rows expose secondary actions (Duplicate/Delete, Rename, Sync, Edit-as-New, etc.), matching the reference product's pattern of gear icons (per-page settings) vs. three-dot menus (list-level actions).
 
 ---
 
@@ -79,7 +79,7 @@ There is **no login, onboarding account screen, or collaboration UI** in Glyphbo
 - Per-item **⋯** menus: Duplicate?/Merge with next chapter/Split-related, Hide in TOC, Include In, Begin On, Numbered, per-chapter hides, Save as Master Page, Create Part/Volume (right-click or ⋯), Delete (Keep Children / Delete Children for parts).
 
 ### 4.3 Top toolbar (over the editor)
-Mirrors Atticus's row of tools (left → right, roughly):
+Mirrors the reference product's row of tools (left → right, roughly):
 - **Style/block dropdown** (Body, Subheading H2–H6, Block Quote, Verse, Callout).
 - Character formatting: **B** **I** **U**, then overflow (via arrow): Strikethrough, Subscript, Superscript, Monospace, Small Caps, Sans-serif.
 - **Alignment + Lists** (unordered/ordered).
@@ -88,7 +88,7 @@ Mirrors Atticus's row of tools (left → right, roughly):
 - Selection-based mini behaviors with tooltips (industry standard).
 
 ### 4.4 Right sidebar (writing tools)
-Ordered tool icons (Atticus-style stack), opening panels:
+Ordered tool icons (the reference product-style stack), opening panels:
 - **Editor Settings** (personal, display-only prefs: font, size, line height, indented vs. spaced paragraphs, justification).
 - **Find & Replace** (book-wide; Sync-All-Chapters affordance).
 - **Goals** (Book Goal: target words + due date + writing days → per-day calc; Writing Habit Tracker: daily word target, committed days, calendar streaks — flame when goal hit).
@@ -101,7 +101,7 @@ Ordered tool icons (Atticus-style stack), opening panels:
 - Saving… / Saved indicator; **Word count** (book / chapter / selection); Sprint Timer status; **Export to .docx** quick button; chapter/page context.
 
 ### 4.6 Editor canvas behavior
-- Clean writing surface; page-margins are *not* shown while writing (Atticus shows a plain manuscript feel) — theme fidelity appears in Preview and Formatting.
+- Clean writing surface; page-margins are *not* shown while writing (the reference product shows a plain manuscript feel) — theme fidelity appears in Preview and Formatting.
 - Front/back-matter pages and chapters open in the same editor; gear icon (page-level options) appears contextually (e.g., below the title or beside the page).
 
 ---
@@ -118,7 +118,7 @@ Ordered tool icons (Atticus-style stack), opening panels:
 - Selected theme applied live to the preview.
 
 ### 5.3 Custom theme builder
-Atticus-style organized builder with these sections (left list of "theme elements"; content panes to the right; **Save as New Theme** at top with unsaved-changes leave warning):
+the reference product-style organized builder with these sections (left list of "theme elements"; content panes to the right; **Save as New Theme** at top with unsaved-changes leave warning):
 - **Chapter Heading** — toggles for Chapter Number / Title / Subtitle with per-element font/size/style/alignment; Chapter Image (same-every-chapter or per-chapter individual images) with placement/size; Background Image (bleed/full-page, opacity, light-text toggle).
 - **Paragraph Settings** — first-sentence formatting (Drop Caps, Lead-in Small Caps; chapter-start vs also-after-scene-breaks), indent vs. spaced paragraphs.
 - **Subheadings (H2–H6)** — per-level styling.
@@ -137,28 +137,28 @@ Atticus-style organized builder with these sections (left list of "theme element
 
 ---
 
-## 6. Shared Interaction Patterns (Atticus conventions)
+## 6. Shared Interaction Patterns (the reference product conventions)
 
 - **⋯ three-dot menu** — secondary list/tile actions.
 - **Gear icon** — per-chapter/page settings (Chapter Options: Hide Chapter Image/Heading/Page Number/Header & Footer/First-Sentence Formatting, Hide in TOC, Use Smaller Chapter Title, Invert Text Color).
 - **Drag & drop everywhere** — reorder chapters/pages/scenes, move between Front Matter/Body/Back Matter, drag master pages into a book, reorder volumes/parts.
-- **Tooltips** on all icon-only buttons (Atticus uses explanatory tooltips).
+- **Tooltips** on all icon-only buttons (the reference product uses explanatory tooltips).
 - **Modals** for: import, export flow (PDF render "ready" green-light), goals editor, master-page sync confirmation (with "apply to all books" semantics), destructive actions (delete book, delete part w/ Keep/Delete Children).
 - **Unsaved-leave warning** when leaving the theme builder with unsaved changes.
 - **Inline contextual options:** image gear (caption, alignment, wrap, separate page, size, link, alt text), link pencil (edit/visit/delete).
 
 ---
 
-## 7. Terminology (match Atticus vocabulary)
+## 7. Terminology (match the reference product vocabulary)
 
-Reuse Atticus's established terms so users transfer knowledge directly: *Book/Upload a Book/Start a Book, Boxset, Front Matter/Back Matter/Body, Chapters, Scenes, Parts, Volumes, Master Pages, Themes / custom theme, Chapter Options, Include In (All/eBook/Print/None), Begin On (Right/Left/Either), Hide from Table of Contents, Numbered chapters, Drop Caps, Lead-in Small Caps, Scene Break, Page Break, Split Chapter, Smart Quotes, Book Goal, Writing Habit, Sprint Timer, Editor Settings, Previewer, Device previews, Export ePub/PDF, Large Print, Trim Size, Bleed.*
+Reuse the reference product's established terms so users transfer knowledge directly: *Book/Upload a Book/Start a Book, Boxset, Front Matter/Back Matter/Body, Chapters, Scenes, Parts, Volumes, Master Pages, Themes / custom theme, Chapter Options, Include In (All/eBook/Print/None), Begin On (Right/Left/Either), Hide from Table of Contents, Numbered chapters, Drop Caps, Lead-in Small Caps, Scene Break, Page Break, Split Chapter, Smart Quotes, Book Goal, Writing Habit, Sprint Timer, Editor Settings, Previewer, Device previews, Export ePub/PDF, Large Print, Trim Size, Bleed.*
 
 ---
 
 ## 8. Visual Language (own branding, same "feel")
 
-- Clean, modern, distraction-light desktop UI; generous whitespace; neutral light theme as default with a single strong **brand accent** (Atticus uses its red; Glyphbook defines its own accent).
-- **Dark mode** supported (app-level setting) — matches Atticus's Jan-2026 dark theme.
+- Clean, modern, distraction-light desktop UI; generous whitespace; neutral light theme as default with a single strong **brand accent** (the reference product uses its red; Glyphbook defines its own accent).
+- **Dark mode** supported (app-level setting) — matches the reference product's Jan-2026 dark theme.
 - Type: system UI font stack for chrome; bundled book fonts only inside editor/preview where theme fidelity matters.
 - Icons: consistent outline icon set (lucide-react) with tooltips; text labels for primary actions.
 - Window chrome: standard OS frame (title bar) with in-app top bar below it.
@@ -177,7 +177,7 @@ Reuse Atticus's established terms so users transfer knowledge directly: *Book/Up
 ## 10. Keyboard & Efficiency
 
 - Standard editing shortcuts (copy/paste, paste-without-formatting `Ctrl/CMD+Shift+V`).
-- Atticus-documented OS character shortcuts for smart quotes/em-dash/etc. honored in Help.
+- the reference product-documented OS character shortcuts for smart quotes/em-dash/etc. honored in Help.
 - Focus navigation: no required mouse-only flows (tab/enter/escape through dialogs).
 
 ---
@@ -189,7 +189,7 @@ Reuse Atticus's established terms so users transfer knowledge directly: *Book/Up
 
 ---
 
-## 12. Deliberate Omissions (vs. Atticus UI)
+## 12. Deliberate Omissions (vs. the reference product UI)
 
 Removed because Glyphbook is offline and single-user:
 - Login/account screens, profile/avatar flows.
@@ -211,7 +211,7 @@ Shared: ConfirmDialog, ProgressDialog, PDFProgressDialog, ImageOptionsDialog, Li
 
 ## 14. Acceptance Criteria (UI parity)
 
-1. A user familiar with Atticus can perform Start/Upload, write & organize chapters/scenes, apply a theme, preview on a device, and export ePub/PDF **without a tutorial**, using the terminology and locations above.
+1. A user familiar with the reference product can perform Start/Upload, write & organize chapters/scenes, apply a theme, preview on a device, and export ePub/PDF **without a tutorial**, using the terminology and locations above.
 2. All primary actions reachable in ≤ 3 clicks and have tooltips/labels.
 3. Preview == export fidelity (same generated output rendered in preview, device frames, and print).
 4. The three-screen model with top-center Writing/Formatting switch and logo-home is present on every screen.

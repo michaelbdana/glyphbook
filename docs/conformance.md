@@ -1,6 +1,6 @@
 # Glyphbook — Feature Conformance
 
-Coverage status against the compiled Atticus feature spec (`atticus_features.md`), as of the completion of DESIGN.md milestone 10. Out-of-scope items are marked **OOS** (offline, single-user product decision).
+Coverage status against the compiled the reference product feature spec (`feature-reference.md`), as of the completion of DESIGN.md milestone 10. Out-of-scope items are marked **OOS** (offline, single-user product decision).
 
 ## Core capabilities
 
