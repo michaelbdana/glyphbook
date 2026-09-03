@@ -45,7 +45,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
@@ -59,7 +61,10 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ]
     },
@@ -67,7 +72,10 @@
       "icon": "build/icon.png",
       "category": "Office",
       "maintainer": "Michael Dana <michaelbdana@yahoo.com>",
-      "target": ["AppImage", "deb"]
+      "target": [
+        "AppImage",
+        "deb"
+      ]
     }
   },
   "devDependencies": {
@@ -102,7 +110,6 @@
     "docx": "^9.7.1",
     "jszip": "^3.10.1",
     "lucide-react": "^1.40.0",
-    "mammoth": "^1.12.2",
     "pagedjs": "^0.4.3",
     "zustand": "^5.0.15"
   }

@@ -1,134 +1,321 @@
-import mammoth from "mammoth";
-import type { Book, Chapter, ProseBlock, ProseDoc, ProseInline } from "../../src/shared/model/types";
+import JSZip from "jszip";
+import type {
+  Book,
+  Chapter,
+  ProseBlock,
+  ProseDoc,
+  ProseInline,
+} from "../../src/shared/model/types";
+import { isLikelyBoundary, cleanTitle, type BoundaryKind } from "../../src/shared/services/outline";
 
 function newId(): string {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function unescape(text: string): string {
-  return text
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'");
+type Segment = { text: string; bold: boolean; italic: boolean };
+
+type Para = {
+  segments: Segment[];
+  text: string;
+  styleLevel: number;
+  pageBreak: boolean;
+  pageBreakBefore: boolean;
+  centered: boolean;
+};
+
+function emptyChapter(title: string, section: "front" | "body" | "back"): Chapter {
+  return {
+    id: newId(),
+    title,
+    section,
+    numbered: section === "body",
+    kind: section === "body" ? "chapter" : "page",
+    content: { type: "doc", content: [] },
+  };
 }
 
-function inlineHtml(html: string): ProseInline[] {
-  const cleaned = unescape(html);
-  const inline: ProseInline[] = [];
-  const pattern = /<strong>|<b>|<em>|<i>|<\/strong>|<\/b>|<\/em>|<\/i>/g;
-  let lastIndex = 0;
-  let bold = false;
-  let italic = false;
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(cleaned)) !== null) {
-    const start = match.index;
-    if (start > lastIndex) {
-      const text = cleaned.slice(lastIndex, start);
-      if (text) inline.push({ type: "text", text, marks: marks(bold, italic) });
+type RunFlags = { bold?: boolean; italic?: boolean };
+
+function mergeFlags(base: RunFlags, over: RunFlags): RunFlags {
+  const result = { ...base };
+  if (over.bold !== undefined) result.bold = over.bold;
+  if (over.italic !== undefined) result.italic = over.italic;
+  return result;
+}
+
+function parseOnOff(xml: string, tag: "b" | "i"): boolean | undefined {
+  const match = xml.match(new RegExp(`<w:${tag}\\b[^>]*/?>`));
+  if (!match) return undefined;
+  return /w:val="(?:0|false)"/.test(match[0]) ? false : true;
+}
+
+function rPrFlags(container: string): RunFlags {
+  const rPr = container.match(/<w:rPr\b[^>]*>[\s\S]*?<\/w:rPr>/);
+  if (!rPr) return {};
+  return { bold: parseOnOff(rPr[0], "b"), italic: parseOnOff(rPr[0], "i") };
+}
+
+type StyleDef = { basedOn?: string; flags: RunFlags };
+
+function parseStyles(xml: string): Map<string, StyleDef> {
+  const map = new Map<string, StyleDef>();
+  const styles = xml.match(/<w:style\b[^>]*>[\s\S]*?<\/w:style>/g) ?? [];
+  for (const style of styles) {
+    const id = style.match(/w:styleId="([^"]+)"/);
+    if (!id) continue;
+    const basedOn = style.match(/<w:basedOn w:val="([^"]+)"/);
+    map.set(id[1], {
+      basedOn: basedOn ? basedOn[1] : undefined,
+      flags: rPrFlags(style),
+    });
+  }
+  return map;
+}
+
+function styleChainFlags(
+  styles: Map<string, StyleDef>,
+  id: string | undefined,
+  memo: Map<string, RunFlags>,
+): RunFlags {
+  if (!id || !styles.has(id)) return {};
+  if (memo.has(id)) return memo.get(id)!;
+  const def = styles.get(id)!;
+  const parent = styleChainFlags(styles, def.basedOn, memo);
+  const flags = mergeFlags(parent, def.flags);
+  memo.set(id, flags);
+  return flags;
+}
+
+function runXmlText(run: string): string {
+  let text = "";
+  const nodes = run.match(/<w:t(?: [^>]*)?>[\s\S]*?<\/w:t>/g) ?? [];
+  for (const node of nodes) {
+    text += node.replace(/<w:t[^>]*>/, "").replace(/<\/w:t>$/, "");
+  }
+  if (/<w:tab\b/.test(run)) text = ` ${text}`;
+  return text;
+}
+
+function parseParagraphs(
+  xml: string,
+  styles: Map<string, StyleDef>,
+): Para[] {
+  const raw = xml.match(/<w:p\b[^>]*>[\s\S]*?<\/w:p>/g) ?? [];
+  const paras: Para[] = [];
+  const memo = new Map<string, RunFlags>();
+
+  for (const p of raw) {
+    const style = p.match(/<w:pStyle w:val="([^"]+)"/);
+    const styleName = style ? style[1] : "";
+    const levelMatch = styleName.match(/Heading([1-9])/i);
+    const styleLevel = levelMatch ? Number(levelMatch[1]) : 0;
+
+    const centered = /<w:jc w:val="center"/.test(p);
+    let pageBreak = false;
+
+    const pPr = p.match(/<w:pPr\b[^>]*>[\s\S]*?<\/w:pPr>/);
+    const paraBase = mergeFlags(
+      styleChainFlags(styles, styleName, memo),
+      rPrFlags(pPr ? pPr[0] : ""),
+    );
+
+    const segments: Segment[] = [];
+    const runs = p.match(/<w:r\b[^>]*>[\s\S]*?<\/w:r>/g) ?? [];
+    for (const run of runs) {
+      if (/<w:br w:type="page"/.test(run) || /<w:br\s+w:type='page'/.test(run)) {
+        pageBreak = true;
+      }
+      const runPr = run.match(/<w:rPr\b[^>]*>[\s\S]*?<\/w:rPr>/);
+      const runRpr = runPr ? runPr[0] : "";
+      const charStyle = runRpr.match(/<w:rStyle w:val="([^"]+)"/);
+      const eff = mergeFlags(
+        paraBase,
+        mergeFlags(
+          styleChainFlags(styles, charStyle ? charStyle[1] : undefined, memo),
+          rPrFlags(runRpr),
+        ),
+      );
+
+      const text = runXmlText(run);
+      if (text) {
+        segments.push({
+          text,
+          bold: eff.bold === true,
+          italic: eff.italic === true,
+        });
+      }
     }
-    const token = match[0];
-    if (token === "<strong>" || token === "<b>") bold = true;
-    else if (token === "</strong>" || token === "</b>") bold = false;
-    else if (token === "<em>" || token === "<i>") italic = true;
-    else if (token === "</em>" || token === "</i>") italic = false;
-    lastIndex = match.index + token.length;
+
+    const text = cleanTitle(segments.map((s) => s.text).join(""));
+    if (!text && !pageBreak && styleLevel === 0) continue;
+
+    paras.push({ segments, text, styleLevel, pageBreak, pageBreakBefore: false, centered });
   }
-  if (lastIndex < cleaned.length) {
-    const text = cleaned.slice(lastIndex);
-    if (text) inline.push({ type: "text", text, marks: marks(bold, italic) });
+
+  let pendingBreak = false;
+  for (const para of paras) {
+    para.pageBreakBefore = pendingBreak || para.pageBreak;
+    pendingBreak = para.pageBreak;
+    if (para.text || para.styleLevel > 0) pendingBreak = false;
   }
-  return inline;
+  return paras;
 }
 
-function marks(bold: boolean, italic: boolean): ProseInline["marks"] {
-  const list: NonNullable<ProseInline["marks"]> = [];
-  if (bold) list.push({ type: "bold" });
-  if (italic) list.push({ type: "italic" });
-  return list.length ? list : undefined;
+function paragraphBlocks(para: Para, styleLevel: number): ProseBlock[] {
+  const inlines: ProseInline[] = [];
+  for (const seg of para.segments) {
+    if (!seg.text) continue;
+    const marks: NonNullable<ProseInline["marks"]> = [];
+    if (seg.bold) marks.push({ type: "bold" });
+    if (seg.italic) marks.push({ type: "italic" });
+    inlines.push({ type: "text", text: seg.text, marks: marks.length ? marks : undefined });
+  }
+  if (inlines.length === 0) return [];
+
+  if (styleLevel >= 2 && para.text.length <= 90 && !/[.!?…]$/.test(para.text)) {
+    const level = Math.min(styleLevel, 6);
+    return [{ type: "heading", attrs: { level }, content: inlines }];
+  }
+  return [{ type: "paragraph", content: inlines }];
 }
 
-function blocksFromHtml(html: string): ProseBlock[] {
-  const blocks: ProseBlock[] = [];
-  const element =
-    /<(p|h1|h2|h3|h4|h5|h6|li)[^>]*>([\s\S]*?)<\/\1>/g;
-  let match: RegExpExecArray | null;
-  const textRe = /<[^>]+>/g;
-  while ((match = element.exec(html)) !== null) {
-    const tag = match[1];
-    const content = match[2].replace(textRe, "");
-    if (tag === "p" || tag === "li") {
-      const inlines = inlineHtml(content);
-      if (inlines.length) blocks.push({ type: "paragraph", content: inlines });
-    } else {
-      const level = Math.min(Math.max(Number(tag[1]), 2), 6);
-      const inlines = inlineHtml(content);
-      if (inlines.length) blocks.push({ type: "heading", attrs: { level }, content: inlines });
+function standardFront(): Chapter[] {
+  return [
+    { ...emptyChapter("Title Page", "front"), kind: "title" },
+    { ...emptyChapter("Copyright", "front"), kind: "copyright" },
+    { ...emptyChapter("Table of Contents", "front"), kind: "toc" },
+  ];
+}
+
+function segmentParas(paras: Para[]): {
+  docTitle: string;
+  frontParagraphs: Para[];
+  chapters: { title: string; numbered: boolean; section: "front" | "body" | "back"; paras: Para[] }[];
+} {
+  const docTitlePara = paras.find((p) => p.styleLevel === 1 && p.text);
+  const docTitle = docTitlePara ? docTitlePara.text : "";
+  const startIndex = docTitlePara ? paras.indexOf(docTitlePara) + 1 : 0;
+
+  const frontParagraphs: Para[] = [];
+  const chapters: {
+    title: string;
+    numbered: boolean;
+    section: "front" | "body" | "back";
+    paras: Para[];
+  }[] = [];
+  let current: (typeof chapters)[number] | null = null;
+  let currentBuffer: Para[] = [];
+
+  const commit = () => {
+    if (current) {
+      current.paras = currentBuffer;
+      chapters.push(current);
     }
-  }
-  return blocks;
-}
+    currentBuffer = [];
+    current = null;
+  };
 
-function emptyChapter(title: string, section: "front" | "body"): Chapter {
-  return { id: newId(), title, section, numbered: section === "body", kind: section === "body" ? "chapter" : "page", content: { type: "doc", content: [] } };
+  for (const para of paras.slice(startIndex)) {
+    if (!para.text && !para.pageBreakBefore) continue;
+    const kind: BoundaryKind = isLikelyBoundary({
+      text: para.text,
+      styleLevel: para.styleLevel,
+      pageBreakBefore: para.pageBreakBefore,
+      centered: para.centered,
+      isFirstParagraph: false,
+    });
+
+    if (!kind) {
+      if (current) currentBuffer.push(para);
+      else frontParagraphs.push(para);
+      continue;
+    }
+
+    commit();
+    current = {
+      title: para.text || "Chapter",
+      numbered: kind === "chapter",
+      section: kind === "back" ? "back" : "body",
+      paras: [],
+    };
+  }
+  commit();
+
+  return { docTitle, frontParagraphs, chapters };
 }
 
 export async function parseDocx(
   buffer: Buffer,
   defaultTitle: string,
 ): Promise<Book> {
-  const result = await mammoth.convertToHtml({ buffer });
-  const html = result.value;
+  const zip = await JSZip.loadAsync(buffer);
+  const entry = zip.file("word/document.xml");
+  if (!entry) throw new Error("Not a valid .docx file (missing document.xml)");
+  const xml = await entry.async("string");
 
-  const sections: { title: string; html: string }[] = [];
-  const headingPattern = /<h1[^>]*>([\s\S]*?)<\/h1>/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = headingPattern.exec(html)) !== null) {
-    const title = unescape(match[1].replace(/<[^>]+>/g, "").trim());
-    const before = html.slice(lastIndex, match.index).trim();
-    if (before) sections.push({ title: "", html: before });
-    sections.push({ title: title || "", html: "" });
-    lastIndex = match.index + match[0].length;
+  let styles = new Map<string, StyleDef>();
+  const stylesEntry = zip.file("word/styles.xml");
+  if (stylesEntry) {
+    styles = parseStyles(await stylesEntry.async("string"));
   }
-  const tail = html.slice(lastIndex).trim();
-  if (tail) sections.push({ title: "", html: tail });
-  if (sections.length === 0) {
-    sections.push({ title: defaultTitle || "Chapter 1", html });
-  }
+
+  const paras = parseParagraphs(xml, styles);
+  const { docTitle, frontParagraphs, chapters } = segmentParas(paras);
 
   const now = new Date().toISOString();
-  const front: Chapter[] = [
-    { ...emptyChapter("Title Page", "front"), kind: "title" },
-    { ...emptyChapter("Copyright", "front"), kind: "copyright" },
-    { ...emptyChapter("Table of Contents", "front"), kind: "toc" },
-  ];
-  const body: Chapter[] = [];
+  const front: Chapter[] = standardFront();
 
-  for (const section of sections) {
-    const content: ProseDoc = { type: "doc", content: blocksFromHtml(section.html) };
-    if (!section.title) {
-      if (!content.content || content.content.length === 0) continue;
-      const opening: Chapter = { ...emptyChapter("Front Matter", "front"), content };
-      front.push(opening);
-      continue;
-    }
-    body.push({
-      ...emptyChapter(section.title, "body"),
+  const bodyChapters: Chapter[] = chapters
+    .filter((c) => c.section === "body")
+    .map((c) => {
+      const content: ProseDoc = {
+        type: "doc",
+        content: c.paras.flatMap((p) => paragraphBlocks(p, p.styleLevel)),
+      };
+      return {
+        ...emptyChapter(c.title, "body"),
+        numbered: c.numbered,
+        content,
+      };
+    });
+  const backChapters: Chapter[] = chapters
+    .filter((c) => c.section === "back")
+    .map((c) => {
+      const content: ProseDoc = {
+        type: "doc",
+        content: c.paras.flatMap((p) => paragraphBlocks(p, p.styleLevel)),
+      };
+      return { ...emptyChapter(c.title, "back"), content };
+    });
+
+  if (bodyChapters.length === 0) {
+    const content: ProseDoc = {
+      type: "doc",
+      content: [...frontParagraphs, ...chapters.flatMap((c) => c.paras)].flatMap((p) =>
+        paragraphBlocks(p, p.styleLevel),
+      ),
+    };
+    bodyChapters.push({
+      ...emptyChapter(docTitle || defaultTitle || "Chapter 1", "body"),
       numbered: true,
       content,
     });
+  } else {
+    const frontContent: ProseDoc = {
+      type: "doc",
+      content: frontParagraphs.flatMap((p) => paragraphBlocks(p, p.styleLevel)),
+    };
+    if (frontContent.content && frontContent.content.length > 0) {
+      front.push({ ...emptyChapter("Front Matter", "front"), content: frontContent });
+    }
   }
 
   return {
     id: newId(),
-    title: defaultTitle || "Imported Book",
+    title: docTitle || defaultTitle || "Imported Book",
     author: "Imported",
     createdAt: now,
     updatedAt: now,
-    chapters: [...front, ...body],
+    chapters: [...front, ...bodyChapters, ...backChapters],
   };
 }

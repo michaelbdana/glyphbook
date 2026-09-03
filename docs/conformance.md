@@ -62,7 +62,7 @@ Coverage status against the compiled Atticus feature spec (`atticus_features.md`
 | Print PDF export | ✔ publish-ready pages via paged.js |
 | EPUB3 export (OPF/nav/NCX, TOC from chapters, styles) | ✔ |
 | DOCX export | ✔ |
-| .docx import (Heading1 chapters, footnotes basic text, front matter auto) | ✔ basic (footnote import & smart styling limited) |
+| .docx import | ✔ robust: parses raw Word XML for paragraph styles, page breaks, centering, and run formatting; auto-detects chapter boundaries using heuristics (Heading 1–3, "Chapter/Prologue/Part…" markers, page-break-started centered titles) so manuscripts not using Heading-1 conventions still split correctly |
 | Export diagnostics | Not built (failures surface via dialogs) |
 
 ## Deferred / not built (parity gaps)
