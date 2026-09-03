@@ -1,10 +1,11 @@
-import { BookOpen, Check, HelpCircle } from "lucide-react";
+import { BookOpen, Check, HelpCircle, Loader2 } from "lucide-react";
 import { useStore } from "../state/store";
 
 export default function TopBar() {
   const screen = useStore((s) => s.screen);
   const setScreen = useStore((s) => s.setScreen);
   const books = useStore((s) => s.books);
+  const saveState = useStore((s) => s.saveState);
 
   const active = screen === "library" || screen === "writing" || screen === "formatting";
 
@@ -51,8 +52,16 @@ export default function TopBar() {
       )}
 
       <div className="ml-auto flex items-center gap-1 text-muted">
-        <span className="flex items-center gap-1 rounded px-2 py-1 text-xs" title="Saved locally">
-          <Check className="h-3.5 w-3.5" /> Saved
+        <span
+          className="flex items-center gap-1 rounded px-2 py-1 text-xs"
+          title="Saved locally to this computer"
+        >
+          {saveState === "saving" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Check className="h-3.5 w-3.5" />
+          )}
+          {saveState === "saving" ? "Saving…" : "Saved"}
         </span>
         <button className="rounded p-1.5 hover:bg-chrome-dark" title="Help">
           <HelpCircle className="h-5 w-5" />

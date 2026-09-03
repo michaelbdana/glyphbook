@@ -3,4 +3,7 @@ export const IPC = {
   spikeGetBook: "spike:get-book",
   spikePrint: "spike:print",
   printResult: "print:result",
+  libraryLoad: "library:load",
+  librarySave: "library:save",
+  libraryExportBook: "library:export-book",
 } as const;

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, FilePlus2, FolderOpen, MoreVertical, Printer, Trash2 } from "lucide-react";
+import { Copy, Download, FilePlus2, FolderOpen, MoreVertical, Printer, Trash2 } from "lucide-react";
 import { useStore } from "../state/store";
 
 function formatDate(iso: string): string {
@@ -11,9 +11,16 @@ function formatDate(iso: string): string {
 }
 
 function BookMenu({ bookId }: { bookId: string }) {
+  const books = useStore((s) => s.books);
   const duplicateBook = useStore((s) => s.duplicateBook);
   const deleteBook = useStore((s) => s.deleteBook);
   const [open, setOpen] = useState(false);
+
+  const exportBook = async () => {
+    const book = books.find((b) => b.id === bookId);
+    if (!book) return;
+    await window.glyphbook.exportBook(book);
+  };
 
   return (
     <div className="relative">
@@ -30,7 +37,7 @@ function BookMenu({ bookId }: { bookId: string }) {
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-20 mt-1 w-40 overflow-hidden rounded-md border border-rule bg-white py-1 text-sm shadow-lg">
+          <div className="absolute right-0 z-20 mt-1 w-44 overflow-hidden rounded-md border border-rule bg-white py-1 text-sm shadow-lg">
             <button
               className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-chrome"
               onClick={() => {
@@ -39,6 +46,15 @@ function BookMenu({ bookId }: { bookId: string }) {
               }}
             >
               <Copy className="h-4 w-4" /> Duplicate
+            </button>
+            <button
+              className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-chrome"
+              onClick={() => {
+                setOpen(false);
+                void exportBook();
+              }}
+            >
+              <Download className="h-4 w-4" /> Export Snapshot
             </button>
             <button
               className="flex w-full items-center gap-2 px-3 py-1.5 text-red-600 hover:bg-chrome"

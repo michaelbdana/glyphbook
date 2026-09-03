@@ -3,9 +3,21 @@ import * as path from "node:path";
 import * as fs from "node:fs/promises";
 import { IPC } from "../src/shared/ipc";
 import { buildSampleBook } from "../src/shared/model/sample";
+import { validateLibrary } from "../src/shared/model/validation";
+import type { Book } from "../src/shared/model/types";
+import {
+  exportBookSnapshot,
+  loadLibrary,
+  saveLibrary,
+} from "./library";
 
 let mainWindow: BrowserWindow | null = null;
 let printWindow: BrowserWindow | null = null;
+
+const tmpUserData = process.env.GLYPHBOOK_TMP_USERDATA;
+if (process.env.GLYPHBOOK_SMOKE_SAVE === "1" && tmpUserData) {
+  app.setPath("userData", tmpUserData);
+}
 
 function preloadPath(): string {
   return path.join(__dirname, "preload.js");
@@ -102,6 +114,19 @@ function registerIpc(): void {
     const win = getPrintWindow();
     return win.id;
   });
+
+  ipcMain.handle(IPC.libraryLoad, async () => {
+    const books = await loadLibrary();
+    return books === null ? null : validateLibrary(books);
+  });
+
+  ipcMain.handle(IPC.librarySave, async (_event, books: Book[]) => {
+    return saveLibrary(validateLibrary(books));
+  });
+
+  ipcMain.handle(IPC.libraryExportBook, async (_event, book: Book) => {
+    return exportBookSnapshot(book);
+  });
 }
 
 void app.whenReady().then(() => {
@@ -110,6 +135,14 @@ void app.whenReady().then(() => {
 
   if (process.env.GLYPHBOOK_SMOKE === "1") {
     getPrintWindow();
+  }
+
+  if (process.env.GLYPHBOOK_SMOKE_SAVE === "1") {
+    void (async () => {
+      const result = await saveLibrary([buildSampleBook()]);
+      console.log(`SAVE RESULT ${JSON.stringify(result)}`);
+      app.quit();
+    })();
   }
 
   app.on("activate", () => {

@@ -46,6 +46,7 @@ export default function WritingScreen() {
   const updateChapter = useStore((s) => s.updateChapter);
   const previewOpen = useStore((s) => s.previewOpen);
   const togglePreview = useStore((s) => s.togglePreview);
+  const saveState = useStore((s) => s.saveState);
 
   const book = books.find((b) => b.id === activeBookId);
   const chapter = book?.chapters.find((c) => c.id === selectedChapterId) ?? null;
@@ -144,8 +145,19 @@ export default function WritingScreen() {
         </div>
 
         <footer className="flex h-9 shrink-0 items-center gap-4 border-t border-rule bg-chrome px-4 text-xs text-muted">
-          <span className="flex items-center gap-1 text-green-700">
-            <span className="h-2 w-2 rounded-full bg-green-600" /> Saved
+          <span
+            className={`flex items-center gap-1 ${
+              saveState === "saving" ? "text-amber-600" : "text-green-700"
+            }`}
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${
+                saveState === "saving"
+                  ? "animate-pulse bg-amber-500"
+                  : "bg-green-600"
+              }`}
+            />
+            {saveState === "saving" ? "Saving…" : "Saved"}
           </span>
           <button
             onClick={togglePreview}

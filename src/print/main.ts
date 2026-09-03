@@ -24,6 +24,9 @@ function blockHtml(block: ProseBlock): string {
   if (block.type === "heading") {
     return `<h2 class="center">${inlineHtml(block.content)}</h2>`;
   }
+  if (block.type !== "paragraph") {
+    return "";
+  }
   return `<p>${inlineHtml(block.content)}</p>`;
 }
 

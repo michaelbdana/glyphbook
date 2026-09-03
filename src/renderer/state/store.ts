@@ -11,11 +11,13 @@ type State = {
   activeBookId: string | null;
   selectedChapterId: string | null;
   previewOpen: boolean;
+  saveState: "saved" | "saving";
 };
 
 type Actions = {
   setScreen: (screen: Screen) => void;
   setActiveBook: (id: string) => void;
+  loadBooks: (books: Book[]) => void;
   startBook: () => void;
   loadSample: () => void;
   deleteBook: (id: string) => void;
@@ -27,6 +29,7 @@ type Actions = {
     patch: Partial<Pick<Chapter, "title" | "content" | "numbered">>,
   ) => void;
   togglePreview: () => void;
+  setSaveState: (state: "saved" | "saving") => void;
 };
 
 function newId(): string {
@@ -73,8 +76,22 @@ export const useStore = create<State & Actions>((set, get) => ({
   activeBookId: null,
   selectedChapterId: null,
   previewOpen: false,
+  saveState: "saved",
 
   setScreen: (screen) => set({ screen }),
+
+  loadBooks: (books) =>
+    set((s) => {
+      const active = s.activeBookId;
+      const stillPresent = books.some((b) => b.id === active);
+      return {
+        books,
+        activeBookId: stillPresent ? active : null,
+        selectedChapterId: stillPresent ? s.selectedChapterId : null,
+      };
+    }),
+
+  setSaveState: (saveState) => set({ saveState }),
 
   setActiveBook: (id) =>
     set((s) => {

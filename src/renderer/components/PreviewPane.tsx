@@ -17,7 +17,10 @@ function blockText(block: ProseBlock): ReactElement | null {
   if (block.type === "heading") {
     return <h2 className="mb-3 text-center text-lg font-semibold">{text}</h2>;
   }
-  return <p className="mb-3 text-[13px] leading-relaxed">{text}</p>;
+  if (block.type === "paragraph") {
+    return <p className="mb-3 text-[13px] leading-relaxed">{text}</p>;
+  }
+  return null;
 }
 
 export default function PreviewPane({ chapter }: { chapter: Chapter | null }) {

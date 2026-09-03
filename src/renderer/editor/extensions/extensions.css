@@ -1,0 +1,29 @@
+.mark-small-caps {
+  font-variant: small-caps;
+}
+
+.mark-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.mark-sans {
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto, sans-serif;
+}
+
+div[data-scene-break] {
+  text-align: center;
+  margin: 1.4em 0;
+  user-select: none;
+}
+
+div[data-scene-break]::before {
+  content: "* * *";
+  letter-spacing: 0.6em;
+  font-size: 0.85em;
+  color: var(--color-muted);
+}
