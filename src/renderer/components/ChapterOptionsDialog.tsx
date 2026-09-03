@@ -1,6 +1,11 @@
 import { useState } from "react";
-import type { Book, Chapter } from "../../shared/model/types";
-import { DEFAULT_CHAPTER_OPTIONS } from "../../shared/model/presets";
+import type {
+  Book,
+  Chapter,
+  ChapterKind,
+  ChapterSection,
+} from "../../shared/model/types";
+import { DEFAULT_CHAPTER_OPTIONS, PRESETS } from "../../shared/model/presets";
 
 type Props = {
   book: Book;
@@ -9,9 +14,47 @@ type Props = {
     options: Partial<Chapter["options"]>;
     partId?: string;
     volumeId?: string;
+    section: ChapterSection;
+    kind: ChapterKind;
   }) => void;
   onClose: () => void;
 };
+
+const SECTIONS: { value: ChapterSection; label: string }[] = [
+  { value: "front", label: "Front Matter" },
+  { value: "body", label: "Body" },
+  { value: "back", label: "Back Matter" },
+];
+
+const KIND_OPTIONS: { value: ChapterKind; label: string }[] = (() => {
+  const seen = new Set<ChapterKind>();
+  const options: { value: ChapterKind; label: string }[] = [];
+  const push = (value: ChapterKind, label: string) => {
+    if (seen.has(value)) return;
+    seen.add(value);
+    options.push({ value, label });
+  };
+  push("page", "Plain Page");
+  push("chapter", "Chapter");
+  push("title", "Title Page");
+  push("copyright", "Copyright Page");
+  push("toc", "Table of Contents");
+  push("dedication", "Dedication");
+  push("epigraph", "Epigraph");
+  push("prologue", "Prologue");
+  push("epilogue", "Epilogue");
+  push("foreword", "Foreword");
+  push("preface", "Preface");
+  push("introduction", "Introduction");
+  push("blurbs", "Blurbs");
+  push("afterword", "Afterword");
+  push("acknowledgements", "Acknowledgements");
+  push("about", "About the Author");
+  push("alsoby", "Also By");
+  push("fullpage", "Full Page Image");
+  for (const preset of PRESETS) push(preset.key, preset.label);
+  return options;
+})();
 
 const INCLUDE_OPTIONS = [
   { value: "all", label: "All" },
@@ -51,6 +94,10 @@ export default function ChapterOptionsDialog({
   );
   const [volumeId, setVolumeId] = useState(chapter.volumeId ?? "");
   const [partId, setPartId] = useState(chapter.partId ?? "");
+  const [section, setSection] = useState<ChapterSection>(chapter.section);
+  const [kind, setKind] = useState<ChapterKind>(
+    chapter.kind ?? (chapter.section === "body" ? "chapter" : "page"),
+  );
 
   const volumes = book.volumes ?? [];
   const parts = (book.parts ?? []).filter(
@@ -72,6 +119,8 @@ export default function ChapterOptionsDialog({
       },
       partId: partId || undefined,
       volumeId: chosenPart?.volumeId ?? (volumeId || undefined),
+      section,
+      kind,
     });
     onClose();
   };
@@ -136,9 +185,39 @@ export default function ChapterOptionsDialog({
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="text-sm">
-              <span className="mb-1 block text-muted">Volume</span>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="text-sm">
+            <span className="mb-1 block text-muted">Section</span>
+            <select
+              value={section}
+              onChange={(e) => setSection(e.target.value as ChapterSection)}
+              className="w-full rounded-md border border-rule px-2 py-1.5"
+            >
+              {SECTIONS.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-muted">Page type</span>
+            <select
+              value={kind}
+              onChange={(e) => setKind(e.target.value as ChapterKind)}
+              className="w-full rounded-md border border-rule px-2 py-1.5"
+            >
+              {KIND_OPTIONS.map((k) => (
+                <option key={k.value} value={k.value}>
+                  {k.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="text-sm">
+            <span className="mb-1 block text-muted">Volume</span>
               <select
                 value={volumeId}
                 onChange={(e) => {

@@ -42,6 +42,7 @@ type ChapterPatch = Partial<
     | "partId"
     | "volumeId"
     | "section"
+    | "kind"
     | "image"
   >
 >;

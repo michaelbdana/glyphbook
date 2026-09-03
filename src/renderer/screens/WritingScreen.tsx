@@ -593,6 +593,8 @@ export default function WritingScreen() {
             updateChapter(optionsChapter.id, {
               partId: patch.partId,
               volumeId: patch.volumeId,
+              section: patch.section,
+              kind: patch.kind,
             });
           }}
           onClose={() => setOptionsChapterId(null)}
