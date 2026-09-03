@@ -21,7 +21,7 @@ import {
 import { useStore } from "../state/store";
 import { useSettingsStore } from "../state/settingsStore";
 import ChapterEditor from "../editor/ChapterEditor";
-import PreviewPane from "../components/PreviewPane";
+import BookPreview from "../components/BookPreview";
 import BookDetailsDialog from "../components/BookDetailsDialog";
 import ChapterOptionsDialog from "../components/ChapterOptionsDialog";
 import FullPageEditor from "../components/FullPageEditor";
@@ -481,7 +481,7 @@ export default function WritingScreen() {
             </div>
           </div>
 
-          {previewOpen && <PreviewPane chapter={chapter} />}
+          {previewOpen && <BookPreview book={book} chapter={chapter} />}
         </div>
 
         <footer className="flex h-9 shrink-0 items-center gap-4 border-t border-rule bg-chrome px-4 text-xs text-muted">

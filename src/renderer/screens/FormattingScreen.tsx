@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Calculator, Check, Palette, RotateCcw } from "lucide-react";
 import { useStore } from "../state/store";
+import BookPreview from "../components/BookPreview";
+import ImageCalcDialog from "../components/ImageCalcDialog";
 import {
   FONT_FAMILIES,
   HEADING_FAMILIES,
@@ -17,33 +19,6 @@ import {
   type PageNumberLocation,
   type RunningHeader,
 } from "../../shared/model/theme";
-import { compilePrintCss } from "../../shared/services/themeCss";
-import { buildSampleBook } from "../../shared/model/sample";
-import ImageCalcDialog from "../components/ImageCalcDialog";
-
-function sampleHtml(theme: BookTheme): string {
-  const book = buildSampleBook();
-  const body = book.chapters.find(
-    (c) => c.kind === "chapter" && c.title === "Chapter One",
-  );
-  const paras = (body?.content.content ?? [])
-    .filter((b) => b.type === "paragraph")
-    .slice(0, 3)
-    .map((b) => {
-      const text = (b.content ?? []).map((i) => i.text).join("");
-      return `<p>${text}</p>`;
-    })
-    .join("");
-  return `<!doctype html><html><head><meta charset="utf-8"><style>${compilePrintCss(
-    theme,
-    { bookTitle: book.title },
-  )}</style></head><body>
-  <section class="chapter first">
-    <h1 class="chapter-title">Chapter One</h1>
-    ${paras}
-  </section>
-  </body></html>`;
-}
 
 function Field({
   label,
@@ -95,8 +70,6 @@ export default function FormattingScreen() {
   const applyOverride = (theme: BookTheme) => {
     updateBook(book.id, { theme });
   };
-
-  const preview = sampleHtml(effectiveTheme);
 
   return (
     <div className="flex h-full">
@@ -178,25 +151,8 @@ export default function FormattingScreen() {
         </div>
       </div>
 
-      <aside className="flex w-[420px] shrink-0 flex-col border-l border-rule bg-chrome">
-        <div className="flex items-center justify-between border-b border-rule px-3 py-2 text-sm font-medium">
-          <span>Print preview</span>
-          <span className="text-xs text-muted">{trimLabel(effectiveTheme)}</span>
-        </div>
-        <div className="flex flex-1 items-start justify-center overflow-auto p-4">
-          <div
-            style={{
-              width: effectiveTheme.trimWidthIn * 96,
-              height: effectiveTheme.trimHeightIn * 96,
-            }}
-          >
-            <iframe
-              title="Print preview"
-              srcDoc={preview}
-              className="h-full w-full border-0 bg-white shadow-md"
-            />
-          </div>
-        </div>
+      <aside className="flex w-[430px] shrink-0 flex-col border-l border-rule bg-chrome">
+        <BookPreview book={book} showPrint initial="print" />
       </aside>
 
       {builderOpen && (

@@ -30,6 +30,9 @@ export type ProseBlock =
   | {
       type: "imageBlock";
       attrs?: ImageAttrs;
+    }
+  | {
+      type: "sceneBreak";
     };
 
 export type ProseDoc = {
