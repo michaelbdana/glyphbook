@@ -256,6 +256,13 @@ export function sanitizeBook(value: unknown): Book | null {
     volumes: Array.isArray(value.volumes)
       ? sanitizeVolumes(value.volumes)
       : undefined,
+    themeName:
+      typeof value.themeName === "string" && value.themeName
+        ? value.themeName
+        : undefined,
+    theme: isRecord(value.theme)
+      ? cloneAs<NonNullable<Book["theme"]>>(value.theme)
+      : undefined,
   };
 }
 

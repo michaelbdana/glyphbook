@@ -1,3 +1,5 @@
+import type { BookThemeOverride } from "./theme";
+
 export type ProseInline = {
   type: "text";
   text: string;
@@ -102,4 +104,6 @@ export type Book = {
   habitLog?: Record<string, number>;
   parts?: Part[];
   volumes?: Volume[];
+  themeName?: string;
+  theme?: BookThemeOverride;
 };

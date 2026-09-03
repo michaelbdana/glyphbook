@@ -27,6 +27,8 @@ type BookPatch = Partial<
     | "habitLog"
     | "parts"
     | "volumes"
+    | "themeName"
+    | "theme"
   >
 >;
 
