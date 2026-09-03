@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { Book } from "../src/shared/model/types";
 import type { EditorSettings } from "../src/shared/settings";
+import type { BookPrint } from "../src/shared/model/prints";
+import type { BookTheme } from "../src/shared/model/theme";
 
 export type SaveResult = { ok: boolean; path?: string; error?: string };
 
@@ -19,7 +21,14 @@ contextBridge.exposeInMainWorld("glyphbook", {
   setSpellCheck: (enabled: boolean) =>
     ipcRenderer.invoke("spell:set", enabled),
   pickImage: () => ipcRenderer.invoke("image:pick"),
-  exportPdf: (book: Book) => ipcRenderer.invoke("export:pdf", book),
+  exportPdf: (book: Book, print?: BookPrint) =>
+    ipcRenderer.invoke("export:pdf", book, print),
+  getPdfSetup: () =>
+    ipcRenderer.invoke("export:get-theme") as Promise<{
+      theme: BookTheme;
+      bleed: boolean;
+      bookTitle: string;
+    }>,
   exportEpub: (book: Book, options?: { profile?: string; quiet?: boolean }) =>
     ipcRenderer.invoke("export:epub", book, options),
   exportDocx: (book: Book) => ipcRenderer.invoke("export:docx", book),

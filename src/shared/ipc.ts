@@ -14,4 +14,5 @@ export const IPC = {
   exportEpub: "export:epub",
   exportDocx: "export:docx",
   importDocx: "import:docx",
+  exportTheme: "export:get-theme",
 } as const;

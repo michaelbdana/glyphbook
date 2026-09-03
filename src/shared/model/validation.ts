@@ -12,10 +12,21 @@ import type {
   Volume,
 } from "./types";
 import { DEFAULT_CHAPTER_OPTIONS } from "./presets";
+import {
+  defaultPrint,
+  printKindLabel,
+  type BookPrint,
+  type PrintInk,
+  type PrintKind,
+  type PrintPaper,
+} from "./prints";
 
 export const CURRENT_SCHEMA_VERSION = 1;
 
 const SECTIONS: ChapterSection[] = ["front", "body", "back"];
+const PRINT_KINDS = new Set<PrintKind>(["paperback", "hardcover", "largePrint"]);
+const PRINT_INKS = new Set<PrintInk>(["bw", "standardColor", "premiumColor"]);
+const PRINT_PAPERS = new Set<PrintPaper>(["white", "cream", "groundwood"]);
 const KINDS = new Set<ChapterKind>([
   "chapter",
   "page",
@@ -245,6 +256,65 @@ function sanitizeVolumes(value: unknown): Volume[] {
   return volumes;
 }
 
+function numberOr(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : fallback;
+}
+
+function booleanOr(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function sanitizePrint(value: unknown): BookPrint | null {
+  if (!isRecord(value)) return null;
+  const kind: PrintKind = PRINT_KINDS.has(value.kind as PrintKind)
+    ? (value.kind as PrintKind)
+    : "paperback";
+  const base = defaultPrint(kind, 0);
+  const ink: PrintInk = PRINT_INKS.has(value.ink as PrintInk)
+    ? (value.ink as PrintInk)
+    : base.ink;
+  const paper: PrintPaper = PRINT_PAPERS.has(value.paper as PrintPaper)
+    ? (value.paper as PrintPaper)
+    : base.paper;
+  const print: BookPrint = {
+    id: typeof value.id === "string" && value.id ? value.id : base.id,
+    kind,
+    label:
+      typeof value.label === "string" && value.label.trim()
+        ? value.label.trim()
+        : printKindLabel(kind),
+    trimWidthIn: numberOr(value.trimWidthIn, base.trimWidthIn),
+    trimHeightIn: numberOr(value.trimHeightIn, base.trimHeightIn),
+    bleed: booleanOr(value.bleed, base.bleed),
+    ink,
+    paper,
+    marginTopIn: numberOr(value.marginTopIn, base.marginTopIn),
+    marginBottomIn: numberOr(value.marginBottomIn, base.marginBottomIn),
+    marginInsideIn: numberOr(value.marginInsideIn, base.marginInsideIn),
+    marginOutsideIn: numberOr(value.marginOutsideIn, base.marginOutsideIn),
+  };
+  if (typeof value.fontSizePt === "number") {
+    print.fontSizePt = Math.max(8, Math.min(40, value.fontSizePt));
+  }
+  if (typeof value.lineHeight === "number") {
+    print.lineHeight = Math.max(1, Math.min(3, value.lineHeight));
+  }
+  if (typeof value.justify === "boolean") print.justify = value.justify;
+  return print;
+}
+
+function sanitizePrints(value: unknown): BookPrint[] {
+  if (!Array.isArray(value)) return [];
+  const prints: BookPrint[] = [];
+  for (const raw of value) {
+    const print = sanitizePrint(raw);
+    if (print) prints.push(print);
+  }
+  return prints;
+}
+
 export function sanitizeBook(value: unknown): Book | null {
   if (!isRecord(value)) return null;
   const now = new Date().toISOString();
@@ -288,6 +358,7 @@ export function sanitizeBook(value: unknown): Book | null {
     cover: isRecord(value.cover)
       ? cloneAs<NonNullable<Book["cover"]>>(value.cover)
       : undefined,
+    prints: Array.isArray(value.prints) ? sanitizePrints(value.prints) : undefined,
   };
 }
 

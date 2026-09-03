@@ -11,6 +11,10 @@ import {
   PRESETS,
   type Preset,
 } from "../../shared/model/presets";
+import {
+  defaultPrints,
+  type BookPrint,
+} from "../../shared/model/prints";
 
 export type Screen = "library" | "writing" | "formatting";
 export type ToolId = "find" | "goals" | "sprint" | "quotes" | "editor";
@@ -29,6 +33,7 @@ type BookPatch = Partial<
     | "volumes"
     | "themeName"
     | "theme"
+    | "prints"
   >
 >;
 
@@ -84,6 +89,7 @@ type Actions = {
   deletePart: (partId: string) => void;
   deleteVolume: (volumeId: string) => void;
   updateOptions: (chapterId: string, options: Partial<ChapterOptions>) => void;
+  updatePrint: (print: BookPrint) => void;
 };
 
 function newId(): string {
@@ -118,9 +124,14 @@ function standardFrontMatter(): Chapter[] {
   ];
 }
 
+function ensurePrints(book: Book): Book {
+  if (book.prints && book.prints.length > 0) return book;
+  return { ...book, prints: defaultPrints() };
+}
+
 function blankBook(title: string): Book {
   const now = new Date().toISOString();
-  return {
+  return ensurePrints({
     id: newId(),
     title,
     author: "Untitled",
@@ -130,7 +141,7 @@ function blankBook(title: string): Book {
       ...standardFrontMatter(),
       emptyChapter("Chapter 1", "body", true),
     ],
-  };
+  });
 }
 
 function patchBook(
@@ -168,8 +179,9 @@ export const useStore = create<State & Actions>((set, get) => ({
     set((s) => {
       const active = s.activeBookId;
       const stillPresent = books.some((b) => b.id === active);
+      const ensured = books.map(ensurePrints);
       return {
-        books,
+        books: ensured,
         activeBookId: stillPresent ? active : null,
         selectedChapterId: stillPresent ? s.selectedChapterId : null,
       };
@@ -196,17 +208,19 @@ export const useStore = create<State & Actions>((set, get) => ({
   },
 
   loadSample: () => {
-    const book = buildSampleBook();
+    const book = ensurePrints(buildSampleBook());
     set((s) => ({ books: [...s.books, book], activeBookId: book.id }));
   },
 
-  importBook: (book) =>
+  importBook: (book) => {
+    const ensured = ensurePrints(book);
     set((s) => ({
-      books: [...s.books, book],
-      activeBookId: book.id,
-      selectedChapterId: book.chapters[0]?.id ?? null,
+      books: [...s.books, ensured],
+      activeBookId: ensured.id,
+      selectedChapterId: ensured.chapters[0]?.id ?? null,
       tool: null,
-    })),
+    }));
+  },
 
   deleteBook: (id) =>
     set((s) => ({
@@ -421,4 +435,20 @@ export const useStore = create<State & Actions>((set, get) => ({
         }),
       };
     }),
+
+  updatePrint: (print) =>
+    set((s) => ({
+      books: s.books.map((b) => {
+        if (b.id !== s.activeBookId) return b;
+        const prints = (b.prints ?? defaultPrints()).map((p) =>
+          p.id === print.id ? print : p,
+        );
+        const has = (b.prints ?? []).some((p) => p.id === print.id);
+        return {
+          ...b,
+          updatedAt: new Date().toISOString(),
+          prints: has ? prints : [...prints, print],
+        };
+      }),
+    })),
 }));

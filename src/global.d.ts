@@ -1,5 +1,9 @@
 import type { Book } from "./shared/model/types";
 import type { EditorSettings } from "./shared/settings";
+import type { BookPrint } from "./shared/model/prints";
+import type { BookTheme } from "./shared/model/theme";
+
+export type PdfSetup = { theme: BookTheme; bleed: boolean; bookTitle: string };
 
 export type SaveResult = { ok: boolean; path?: string; error?: string };
 
@@ -19,7 +23,8 @@ export type GlyphbookApi = {
   saveSettings: (settings: EditorSettings) => Promise<SaveResult>;
   setSpellCheck: (enabled: boolean) => Promise<boolean>;
   pickImage: () => Promise<ImagePickResult>;
-  exportPdf: (book: Book) => Promise<number>;
+  exportPdf: (book: Book, print?: BookPrint) => Promise<number>;
+  getPdfSetup: () => Promise<PdfSetup>;
   exportEpub: (
     book: Book,
     options?: { profile?: string; quiet?: boolean },

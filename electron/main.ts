@@ -5,6 +5,11 @@ import { IPC } from "../src/shared/ipc";
 import { buildSampleBook } from "../src/shared/model/sample";
 import { validateLibrary } from "../src/shared/model/validation";
 import type { Book } from "../src/shared/model/types";
+import { mergeTheme, type BookTheme } from "../src/shared/model/theme";
+import {
+  applyPrintToTheme,
+  type BookPrint,
+} from "../src/shared/model/prints";
 import {
   exportBookSnapshot,
   loadLibrary,
@@ -26,6 +31,17 @@ if (tmpUserData) {
 }
 
 let pendingPdfBook: Book = buildSampleBook();
+let pendingPdfPrint: BookPrint | null = null;
+
+function pdfSetup(): { theme: BookTheme; bleed: boolean; bookTitle: string } {
+  const base = mergeTheme(pendingPdfBook.themeName, pendingPdfBook.theme);
+  const theme = pendingPdfPrint ? applyPrintToTheme(base, pendingPdfPrint) : base;
+  return {
+    theme,
+    bleed: pendingPdfPrint?.bleed ?? false,
+    bookTitle: pendingPdfBook.title,
+  };
+}
 
 function safeFileName(title: string): string {
   return title.replace(/[^\w-]+/g, "_").slice(0, 60) || "book";
@@ -116,9 +132,10 @@ function registerIpc(): void {
       displayHeaderFooter: false,
     });
     await fs.mkdir(exportsDir(), { recursive: true });
+    const suffix = pendingPdfPrint ? `-${safeFileName(pendingPdfPrint.label)}` : "";
     const outPath = path.join(
       exportsDir(),
-      `${safeFileName(pendingPdfBook.title)}.pdf`,
+      `${safeFileName(pendingPdfBook.title)}${suffix}.pdf`,
     );
     await fs.writeFile(outPath, buffer);
     if (process.env.GLYPHBOOK_SMOKE === "1") {
@@ -163,14 +180,17 @@ function registerIpc(): void {
     return announceExport("DOCX", outPath);
   });
 
-  ipcMain.handle(IPC.exportPdf, async (_event, book: Book) => {
+  ipcMain.handle(IPC.exportPdf, async (_event, book: Book, print?: BookPrint) => {
     pendingPdfBook = book;
+    pendingPdfPrint = print ?? null;
     const win = getPrintWindow();
     if (process.env.GLYPHBOOK_SMOKE !== "1") {
       win.webContents.reload();
     }
     return win.id;
   });
+
+  ipcMain.handle(IPC.exportTheme, () => pdfSetup());
 
   ipcMain.handle(IPC.importDocx, async () => {
     if (!mainWindow) return null;

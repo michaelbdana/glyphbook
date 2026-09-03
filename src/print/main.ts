@@ -1,8 +1,8 @@
 import { Previewer } from "pagedjs";
 import type { Book } from "../shared/model/types";
-import { mergeTheme } from "../shared/model/theme";
 import { compilePrintCss } from "../shared/services/themeCss";
 import { buildBodyHtml } from "../shared/services/ebookHtml";
+import type { BookTheme } from "../shared/model/theme";
 
 function escapeHtml(text: string): string {
   return text
@@ -41,10 +41,9 @@ function chapterHtml(book: Book): string {
     .join("\n");
 }
 
-function injectThemeCss(book: Book): void {
-  const theme = mergeTheme(book.themeName, book.theme);
+function injectThemeCss(theme: BookTheme, bookTitle: string, bleed: boolean): void {
   const style = document.createElement("style");
-  style.textContent = compilePrintCss(theme, { bookTitle: book.title });
+  style.textContent = compilePrintCss(theme, { bookTitle, bleed });
   document.head.appendChild(style);
 }
 
@@ -56,7 +55,9 @@ async function run(): Promise<void> {
     throw new Error("Missing #book element");
   }
   container.innerHTML = chapterHtml(book);
-  injectThemeCss(book);
+
+  const setup = await window.glyphbook.getPdfSetup();
+  injectThemeCss(setup.theme, setup.bookTitle, setup.bleed);
 
   const previewer = new Previewer();
   const flow = await previewer.preview();

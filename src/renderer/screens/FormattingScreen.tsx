@@ -7,6 +7,9 @@ import ResizeHandle from "../components/PaneResize";
 import BookPreview from "../components/BookPreview";
 import ImageCalcDialog from "../components/ImageCalcDialog";
 import ExportEpubDialog from "../components/ExportEpubDialog";
+import PrintExportDialog from "../components/PrintExportDialog";
+import PrintConfigDialog from "../components/PrintConfigDialog";
+import { applyPrintToTheme, type BookPrint } from "../../shared/model/prints";
 import {
   FONT_FAMILIES,
   HEADING_FAMILIES,
@@ -47,10 +50,13 @@ export default function FormattingScreen() {
   const books = useStore((s) => s.books);
   const activeBookId = useStore((s) => s.activeBookId);
   const updateBook = useStore((s) => s.updateBook);
+  const updatePrint = useStore((s) => s.updatePrint);
   const setScreen = useStore((s) => s.setScreen);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [calcOpen, setCalcOpen] = useState(false);
   const [epubOpen, setEpubOpen] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
+  const [editingPrint, setEditingPrint] = useState<BookPrint | null>(null);
   const [exportBusy, setExportBusy] = useState<string | null>(null);
   const [previewWidth, setPreviewWidth] = usePersistedWidth(
     "glyph.formatting.preview",
@@ -63,6 +69,12 @@ export default function FormattingScreen() {
     () => (book ? mergeTheme(book.themeName, book.theme) : null),
     [book],
   );
+
+  const previewTheme = useMemo(() => {
+    if (!book || !effectiveTheme) return null;
+    const firstPrint = book.prints?.[0];
+    return firstPrint ? applyPrintToTheme(effectiveTheme, firstPrint) : effectiveTheme;
+  }, [effectiveTheme, book]);
 
   if (!book || !effectiveTheme) {
     return (
@@ -80,14 +92,12 @@ export default function FormattingScreen() {
     updateBook(book.id, { theme });
   };
 
-  const exportFile = (kind: "pdf" | "docx") => {
+  const exportFile = (kind: "docx") => {
     if (exportBusy) return;
     setExportBusy(kind);
-    const job =
-      kind === "docx"
-        ? window.glyphbook.exportDocx(book)
-        : window.glyphbook.exportPdf(book).then(() => undefined);
-    void job.finally(() => setExportBusy(null));
+    void window.glyphbook
+      .exportDocx(book)
+      .finally(() => setExportBusy(null));
   };
 
   return (
@@ -125,22 +135,55 @@ export default function FormattingScreen() {
               key={kind}
               onClick={() => {
                 if (kind === "epub") setEpubOpen(true);
-                else exportFile(kind);
+                else if (kind === "pdf") setPrintOpen(true);
+                else exportFile("docx");
               }}
               disabled={exportBusy !== null}
               className="rounded-md border border-rule px-3 py-1 text-xs font-medium uppercase disabled:opacity-50"
               title={
-                kind === "epub"
-                  ? "Export store-specific ePub versions"
-                  : `Export ${kind.toUpperCase()} to your exports folder`
+                kind === "pdf"
+                  ? "Export print versions (Paperback, Hardcover, Large Print)"
+                  : kind === "epub"
+                    ? "Export store-specific ePub versions"
+                    : `Export ${kind.toUpperCase()} to your exports folder`
               }
             >
               {exportBusy === kind ? "Working…" : kind}
             </button>
           ))}
           <span className="ml-auto text-xs text-muted">
-            ePub & PDF are publish-ready · DOCX for sharing/backup
+            Print PDF uses your print-version setups
           </span>
+        </div>
+
+        <div className="mb-5 rounded-lg border border-rule bg-white p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-sm font-semibold">Print versions</p>
+            <p className="text-xs text-muted">
+              Stored with the book · trim, margins, bleed, ink/paper, type
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {(book.prints ?? []).map((print) => (
+              <button
+                key={print.id}
+                onClick={() => setEditingPrint(print)}
+                className="rounded-md border border-rule bg-chrome px-3 py-1.5 text-left text-xs hover:border-accent"
+                title="Edit this print version"
+              >
+                <span className="font-semibold">{print.label}</span>
+                <span className="ml-1 text-muted">
+                  {print.trimWidthIn}" × {print.trimHeightIn}"
+                </span>
+                {print.bleed && <span className="ml-1 text-accent">bleed</span>}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-muted">
+            KDP print minimums: trim-based page counts; outside/top/bottom ≥
+            0.25" (no bleed) or 0.375" (bleed); inside gutter 0.375"–0.875" by
+            page count. Bleed adds 0.125" to the page width and 0.25" to height.
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
@@ -207,7 +250,14 @@ export default function FormattingScreen() {
         className="flex shrink-0 flex-col border-l border-rule bg-chrome"
         style={{ width: previewWidth }}
       >
-        <BookPreview book={book} showPrint initial="print" />
+        {previewTheme && (
+          <BookPreview
+            book={book}
+            showPrint
+            initial="print"
+            themeOverride={previewTheme}
+          />
+        )}
       </aside>
 
       {builderOpen && (
@@ -234,6 +284,19 @@ export default function FormattingScreen() {
 
       {epubOpen && (
         <ExportEpubDialog book={book} onClose={() => setEpubOpen(false)} />
+      )}
+
+      {printOpen && (
+        <PrintExportDialog book={book} onClose={() => setPrintOpen(false)} />
+      )}
+
+      {editingPrint && effectiveTheme && (
+        <PrintConfigDialog
+          print={editingPrint}
+          baseTheme={effectiveTheme}
+          onSave={(print) => updatePrint(print)}
+          onClose={() => setEditingPrint(null)}
+        />
       )}
     </div>
   );

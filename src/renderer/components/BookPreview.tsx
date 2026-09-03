@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { MonitorSmartphone } from "lucide-react";
 import type { Book, Chapter } from "../../shared/model/types";
-import { mergeTheme } from "../../shared/model/theme";
+import { mergeTheme, type BookTheme } from "../../shared/model/theme";
 import { PREVIEW_DEVICES } from "../../shared/model/devices";
 import {
   ebookChapterHtml,
@@ -14,6 +14,7 @@ type Props = {
   chapter?: Chapter | null;
   showPrint?: boolean;
   initial?: string;
+  themeOverride?: BookTheme;
 };
 
 export default function BookPreview({
@@ -21,9 +22,13 @@ export default function BookPreview({
   chapter,
   showPrint = false,
   initial = "paperwhite",
+  themeOverride,
 }: Props) {
   const [deviceId, setDeviceId] = useState(initial);
-  const theme = useMemo(() => mergeTheme(book.themeName, book.theme), [book]);
+  const theme = useMemo(
+    () => themeOverride ?? mergeTheme(book.themeName, book.theme),
+    [book, themeOverride],
+  );
 
   const device = PREVIEW_DEVICES.find((d) => d.id === deviceId) ?? PREVIEW_DEVICES[0];
   const isPrint = deviceId === "print";

@@ -1,4 +1,5 @@
 import type { BookThemeOverride } from "./theme";
+import type { BookPrint } from "./prints";
 
 export type ProseInline = {
   type: "text";
@@ -150,4 +151,5 @@ export type Book = {
   themeName?: string;
   theme?: BookThemeOverride;
   cover?: ImageAttrs;
+  prints?: BookPrint[];
 };

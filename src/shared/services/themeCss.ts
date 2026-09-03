@@ -1,6 +1,6 @@
 import type { BookTheme } from "../model/theme";
 
-export type PrintContext = { bookTitle?: string };
+export type PrintContext = { bookTitle?: string; bleed?: boolean };
 
 function cssQuote(value: string): string {
   return `"${value.replace(/"/g, '\\"')}"`;
@@ -30,14 +30,19 @@ export function compilePrintCss(themeIn: BookTheme, ctx: PrintContext = {}): str
     };
   }
 
-  const size = `${theme.trimWidthIn}in ${theme.trimHeightIn}in`;
-  const margins = [
-    `${theme.marginTopIn}in`,
-    theme.marginOutsideIn,
-    theme.marginBottomIn,
-    theme.marginInsideIn,
-  ];
-  const marginSpec = `${margins[0]} ${margins[1]}in ${margins[2]} ${margins[3]}in`;
+  const hasBleed = ctx.bleed === true;
+  const widthIn = theme.trimWidthIn + (hasBleed ? 0.125 : 0);
+  const heightIn = theme.trimHeightIn + (hasBleed ? 0.25 : 0);
+  const size = `${widthIn}in ${heightIn}in`;
+  const bleedTop = hasBleed ? 0.125 : 0;
+  const bleedBottom = hasBleed ? 0.125 : 0;
+  const bleedOutside = hasBleed ? 0.125 : 0;
+  const bleedInside = 0;
+  const marginSpec = `${theme.marginTopIn + bleedTop}in ${
+    theme.marginOutsideIn + bleedOutside
+  }in ${theme.marginBottomIn + bleedBottom}in ${
+    theme.marginInsideIn + bleedInside
+  }in`;
 
   const topContentValue = topContent(theme, ctx);
   const bottomBox = theme.pageNumber === "footer" ? "counter(page)" : "";
