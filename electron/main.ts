@@ -14,6 +14,7 @@ import { loadSettings, saveSettings } from "./settingsStore";
 import type { EditorSettings } from "../src/shared/settings";
 import { buildEpubBuffer } from "./exporters/epub";
 import { buildDocxBuffer } from "./exporters/docx";
+import { parseDocx } from "./importers/docx";
 
 let mainWindow: BrowserWindow | null = null;
 let printWindow: BrowserWindow | null = null;
@@ -166,6 +167,20 @@ function registerIpc(): void {
       win.webContents.reload();
     }
     return win.id;
+  });
+
+  ipcMain.handle(IPC.importDocx, async () => {
+    if (!mainWindow) return null;
+    const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+      title: "Import a Word document",
+      properties: ["openFile"],
+      filters: [{ name: "Word documents", extensions: ["docx"] }],
+    });
+    if (canceled || filePaths.length === 0) return null;
+    const filePath = filePaths[0];
+    const buffer = await fs.readFile(filePath);
+    const defaultTitle = path.basename(filePath, path.extname(filePath));
+    return parseDocx(buffer, defaultTitle);
   });
 
   ipcMain.handle(IPC.libraryLoad, async () => {

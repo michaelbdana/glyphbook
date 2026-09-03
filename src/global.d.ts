@@ -22,6 +22,7 @@ export type GlyphbookApi = {
   exportPdf: (book: Book) => Promise<number>;
   exportEpub: (book: Book) => Promise<SaveResult>;
   exportDocx: (book: Book) => Promise<SaveResult>;
+  importDocx: () => Promise<Book | null>;
 };
 
 declare global {

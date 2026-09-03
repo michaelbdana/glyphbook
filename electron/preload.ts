@@ -22,4 +22,5 @@ contextBridge.exposeInMainWorld("glyphbook", {
   exportPdf: (book: Book) => ipcRenderer.invoke("export:pdf", book),
   exportEpub: (book: Book) => ipcRenderer.invoke("export:epub", book),
   exportDocx: (book: Book) => ipcRenderer.invoke("export:docx", book),
+  importDocx: () => ipcRenderer.invoke("import:docx"),
 });

@@ -2,6 +2,10 @@
   "name": "glyphbook",
   "version": "0.1.0",
   "description": "Offline book writing and formatting application",
+  "author": {
+    "name": "Michael Dana",
+    "email": "michaelbdana@yahoo.com"
+  },
   "main": "dist-electron/electron/main.js",
   "private": true,
   "license": "UNLICENSED",
@@ -15,7 +19,56 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "icon": "node scripts/make-icon.cjs",
+    "dist": "npm run build && npm run icon && electron-builder",
+    "dist:linux": "npm run build && npm run icon && electron-builder --linux",
+    "dist:win": "npm run build && npm run icon && electron-builder --win",
+    "dist:mac": "npm run build && npm run icon && electron-builder --mac",
+    "pack:dir": "npm run build && npm run icon && electron-builder --dir"
+  },
+  "build": {
+    "appId": "com.glyphbook.app",
+    "productName": "Glyphbook",
+    "asar": true,
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist-electron/**/*",
+      "dist/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ]
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "category": "Office",
+      "maintainer": "Michael Dana <michaelbdana@yahoo.com>",
+      "target": ["AppImage", "deb"]
+    }
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -26,9 +79,11 @@
     "concurrently": "^10.0.5",
     "cross-env": "^10.1.0",
     "electron": "^44.1.1",
+    "electron-builder": "^26.15.3",
     "eslint": "^10.9.1",
     "eslint-plugin-react-hooks": "^7.1.1",
     "jsdom": "^30.0.1",
+    "pngjs": "^7.0.0",
     "prettier": "^3.9.6",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -47,6 +102,7 @@
     "docx": "^9.7.1",
     "jszip": "^3.10.1",
     "lucide-react": "^1.40.0",
+    "mammoth": "^1.12.2",
     "pagedjs": "^0.4.3",
     "zustand": "^5.0.15"
   }

@@ -77,8 +77,11 @@ export default function LibraryScreen() {
   const setActiveBook = useStore((s) => s.setActiveBook);
   const startBook = useStore((s) => s.startBook);
   const loadSample = useStore((s) => s.loadSample);
+  const importBook = useStore((s) => s.importBook);
   const setScreen = useStore((s) => s.setScreen);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const openBook = (id: string) => {
     setActiveBook(id);
@@ -91,6 +94,19 @@ export default function LibraryScreen() {
       await window.glyphbook.runSpike();
     } finally {
       setBusy(false);
+    }
+  };
+
+  const doUpload = async () => {
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const imported = await window.glyphbook.importDocx();
+      if (imported) importBook(imported);
+    } catch (err) {
+      setUploadError(`Import failed: ${String(err)}`);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -107,11 +123,13 @@ export default function LibraryScreen() {
             <FilePlus2 className="h-4 w-4" /> Start a Book
           </button>
           <button
-            disabled
-            title=".docx import arrives in a later milestone"
-            className="flex items-center gap-2 rounded-lg border border-rule bg-white px-4 py-2 text-sm font-medium opacity-50"
+            onClick={() => void doUpload()}
+            disabled={uploading}
+            title="Import a Microsoft Word .docx manuscript"
+            className="flex items-center gap-2 rounded-lg border border-rule bg-white px-4 py-2 text-sm font-medium hover:bg-chrome disabled:opacity-50"
           >
-            <FolderOpen className="h-4 w-4" /> Upload a Book
+            <FolderOpen className="h-4 w-4" />{" "}
+            {uploading ? "Importing…" : "Upload a Book"}
           </button>
           <button
             onClick={loadSample}
@@ -130,8 +148,18 @@ export default function LibraryScreen() {
         </div>
 
         {books.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-rule p-16 text-center text-muted">
-            No books yet. Start a book or upload an existing manuscript.
+          <div className="rounded-lg border border-dashed border-rule p-12 text-center">
+            <h2 className="mb-2 text-lg font-semibold">
+              Welcome to Glyphbook
+            </h2>
+            <p className="mx-auto max-w-md text-sm text-muted">
+              Your offline book-writing workspace. Start a new book from
+              scratch, upload an existing Word document, or load the sample to
+              explore.
+            </p>
+            {uploadError && (
+              <p className="mt-3 text-sm text-red-600">{uploadError}</p>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">

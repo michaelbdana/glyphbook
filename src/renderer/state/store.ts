@@ -63,6 +63,7 @@ type Actions = {
   loadBooks: (books: Book[]) => void;
   startBook: () => void;
   loadSample: () => void;
+  importBook: (book: Book) => void;
   deleteBook: (id: string) => void;
   duplicateBook: (id: string) => void;
   updateBook: (bookId: string, patch: BookPatch) => void;
@@ -152,7 +153,7 @@ function todayKey(): string {
 
 export const useStore = create<State & Actions>((set, get) => ({
   screen: "library",
-  books: [buildSampleBook()],
+  books: [],
   activeBookId: null,
   selectedChapterId: null,
   previewOpen: false,
@@ -197,6 +198,14 @@ export const useStore = create<State & Actions>((set, get) => ({
     const book = buildSampleBook();
     set((s) => ({ books: [...s.books, book], activeBookId: book.id }));
   },
+
+  importBook: (book) =>
+    set((s) => ({
+      books: [...s.books, book],
+      activeBookId: book.id,
+      selectedChapterId: book.chapters[0]?.id ?? null,
+      tool: null,
+    })),
 
   deleteBook: (id) =>
     set((s) => ({
