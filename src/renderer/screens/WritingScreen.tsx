@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { useStore } from "../state/store";
 import { useSettingsStore } from "../state/settingsStore";
+import { usePersistedWidth } from "../state/usePersistedWidth";
+import ResizeHandle from "../components/PaneResize";
 import ChapterEditor from "../editor/ChapterEditor";
 import BookPreview from "../components/BookPreview";
 import BookDetailsDialog from "../components/BookDetailsDialog";
@@ -77,6 +79,12 @@ export default function WritingScreen() {
   const editorFontSize = useSettingsStore((s) => s.fontSize);
   const editorLineHeight = useSettingsStore((s) => s.lineHeight);
   const paragraphSpacing = useSettingsStore((s) => s.paragraphSpacing);
+
+  const [navWidth, setNavWidth] = usePersistedWidth("glyph.writing.nav", 256);
+  const [previewWidth, setPreviewWidth] = usePersistedWidth(
+    "glyph.writing.preview",
+    300,
+  );
 
   const [dragId, setDragId] = useState<string | null>(null);
   const [overRowId, setOverRowId] = useState<string | null>(null);
@@ -385,7 +393,10 @@ export default function WritingScreen() {
 
   return (
     <div className="flex h-full">
-      <aside className="flex w-64 shrink-0 flex-col border-r border-rule bg-chrome">
+      <aside
+        className="flex shrink-0 flex-col border-r border-rule bg-chrome"
+        style={{ width: navWidth }}
+      >
         <div className="border-b border-rule p-3">
           <div className="flex items-center gap-1">
             <p className="truncate text-sm font-semibold">{book.title}</p>
@@ -430,6 +441,8 @@ export default function WritingScreen() {
           ))}
         </div>
       </aside>
+
+      <ResizeHandle width={navWidth} min={170} max={440} onResize={setNavWidth} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex min-w-0 flex-1">
@@ -481,7 +494,23 @@ export default function WritingScreen() {
             </div>
           </div>
 
-          {previewOpen && <BookPreview book={book} chapter={chapter} />}
+          {previewOpen && (
+            <>
+              <ResizeHandle
+                width={previewWidth}
+                min={240}
+                max={620}
+                anchor="right"
+                onResize={setPreviewWidth}
+              />
+              <div
+                className="flex shrink-0 flex-col border-l border-rule"
+                style={{ width: previewWidth }}
+              >
+                <BookPreview book={book} chapter={chapter} />
+              </div>
+            </>
+          )}
         </div>
 
         <footer className="flex h-9 shrink-0 items-center gap-4 border-t border-rule bg-chrome px-4 text-xs text-muted">

@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Calculator, Check, FileDown, Palette, RotateCcw } from "lucide-react";
 import { useStore } from "../state/store";
+import { usePersistedWidth } from "../state/usePersistedWidth";
+import ResizeHandle from "../components/PaneResize";
 import BookPreview from "../components/BookPreview";
 import ImageCalcDialog from "../components/ImageCalcDialog";
 import {
@@ -48,6 +50,10 @@ export default function FormattingScreen() {
   const [builderOpen, setBuilderOpen] = useState(false);
   const [calcOpen, setCalcOpen] = useState(false);
   const [exportBusy, setExportBusy] = useState<string | null>(null);
+  const [previewWidth, setPreviewWidth] = usePersistedWidth(
+    "glyph.formatting.preview",
+    430,
+  );
 
   const book = books.find((b) => b.id === activeBookId);
 
@@ -183,7 +189,17 @@ export default function FormattingScreen() {
         </div>
       </div>
 
-      <aside className="flex w-[430px] shrink-0 flex-col border-l border-rule bg-chrome">
+      <ResizeHandle
+        width={previewWidth}
+        min={320}
+        max={760}
+        anchor="right"
+        onResize={setPreviewWidth}
+      />
+      <aside
+        className="flex shrink-0 flex-col border-l border-rule bg-chrome"
+        style={{ width: previewWidth }}
+      >
         <BookPreview book={book} showPrint initial="print" />
       </aside>
 
