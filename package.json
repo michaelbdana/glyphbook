@@ -1,0 +1,51 @@
+{
+  "name": "glyphbook",
+  "version": "0.1.0",
+  "description": "Offline book writing and formatting application",
+  "main": "dist-electron/electron/main.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "npm run build:electron && concurrently -k \"vite\" \"wait-on tcp:127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
+    "build": "npm run build:electron && npm run build:renderer",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "build:renderer": "vite build",
+    "start": "electron .",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.electron.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.4.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "concurrently": "^10.0.5",
+    "cross-env": "^10.1.0",
+    "electron": "^44.1.1",
+    "eslint": "^10.9.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "jsdom": "^30.0.1",
+    "prettier": "^3.9.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~5.9",
+    "typescript-eslint": "^8.69.0",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11",
+    "wait-on": "^9.1.0"
+  },
+  "dependencies": {
+    "@tiptap/core": "^3.31.2",
+    "@tiptap/pm": "^3.31.2",
+    "@tiptap/react": "^3.31.2",
+    "@tiptap/starter-kit": "^3.31.2",
+    "lucide-react": "^1.40.0",
+    "pagedjs": "^0.4.3",
+    "zustand": "^5.0.15"
+  }
+}

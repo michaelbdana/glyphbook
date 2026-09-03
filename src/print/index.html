@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Glyphbook print pipeline</title>
+    <style>
+      @page {
+        size: 6in 9in;
+        margin: 0.7in 0.8in 0.8in 0.8in;
+
+        @top-center {
+          content: string(chapter);
+          font-size: 9pt;
+          font-family: Georgia, "Times New Roman", serif;
+          color: #444;
+        }
+
+        @bottom-center {
+          content: counter(page);
+          font-size: 9pt;
+          font-family: Georgia, "Times New Roman", serif;
+          color: #444;
+        }
+      }
+
+      @page :first {
+        @top-center {
+          content: none;
+        }
+        @bottom-center {
+          content: none;
+        }
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #fff;
+        font-family: Georgia, "Times New Roman", serif;
+      }
+
+      .chapter {
+        break-before: page;
+        string-set: chapter content();
+      }
+
+      .chapter.first {
+        break-before: avoid;
+      }
+
+      h1.title {
+        margin: 0 0 0.4in;
+        font-size: 24pt;
+        line-height: 1.2;
+        string-set: chapter content();
+      }
+
+      h2.center {
+        margin: 0 0 0.25in;
+        text-align: center;
+        font-size: 15pt;
+      }
+
+      p {
+        margin: 0;
+        text-indent: 0.25in;
+        text-align: justify;
+        font-size: 11.5pt;
+        line-height: 1.45;
+        orphans: 2;
+        widows: 2;
+      }
+
+      .chapter.first p:first-of-type {
+        text-indent: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="book"></main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

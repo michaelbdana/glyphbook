@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-electron/
+dist-print/
+*.log
+.DS_Store
+coverage/
+.vite/
+*.tsbuildinfo
