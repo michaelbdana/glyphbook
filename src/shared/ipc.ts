@@ -9,4 +9,5 @@ export const IPC = {
   settingsLoad: "settings:load",
   settingsSave: "settings:save",
   spellSet: "spell:set",
+  imagePick: "image:pick",
 } as const;

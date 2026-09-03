@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { Check, Palette, RotateCcw } from "lucide-react";
+import { Calculator, Check, Palette, RotateCcw } from "lucide-react";
 import { useStore } from "../state/store";
 import {
   FONT_FAMILIES,
@@ -19,6 +19,7 @@ import {
 } from "../../shared/model/theme";
 import { compilePrintCss } from "../../shared/services/themeCss";
 import { buildSampleBook } from "../../shared/model/sample";
+import ImageCalcDialog from "../components/ImageCalcDialog";
 
 function sampleHtml(theme: BookTheme): string {
   const book = buildSampleBook();
@@ -70,6 +71,7 @@ export default function FormattingScreen() {
   const updateBook = useStore((s) => s.updateBook);
   const setScreen = useStore((s) => s.setScreen);
   const [builderOpen, setBuilderOpen] = useState(false);
+  const [calcOpen, setCalcOpen] = useState(false);
 
   const book = books.find((b) => b.id === activeBookId);
 
@@ -107,6 +109,13 @@ export default function FormattingScreen() {
             </p>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={() => setCalcOpen(true)}
+              className="flex items-center gap-2 rounded-lg border border-rule bg-white px-4 py-2 text-sm font-medium hover:bg-chrome"
+              title="Calculate image pixel sizes for print and eBook"
+            >
+              <Calculator className="h-4 w-4" /> Image Size
+            </button>
             <button
               onClick={() => setBuilderOpen(true)}
               className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover"
@@ -199,6 +208,16 @@ export default function FormattingScreen() {
             setBuilderOpen(false);
           }}
           onClose={() => setBuilderOpen(false)}
+        />
+      )}
+
+      {calcOpen && (
+        <ImageCalcDialog
+          trimWidthIn={effectiveTheme.trimWidthIn}
+          trimHeightIn={effectiveTheme.trimHeightIn}
+          insideMarginIn={effectiveTheme.marginInsideIn}
+          outsideMarginIn={effectiveTheme.marginOutsideIn}
+          onClose={() => setCalcOpen(false)}
         />
       )}
     </div>

@@ -18,4 +18,5 @@ contextBridge.exposeInMainWorld("glyphbook", {
     ipcRenderer.invoke("settings:save", settings),
   setSpellCheck: (enabled: boolean) =>
     ipcRenderer.invoke("spell:set", enabled),
+  pickImage: () => ipcRenderer.invoke("image:pick"),
 });

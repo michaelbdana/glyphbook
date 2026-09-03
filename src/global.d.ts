@@ -3,6 +3,10 @@ import type { EditorSettings } from "./shared/settings";
 
 export type SaveResult = { ok: boolean; path?: string; error?: string };
 
+export type ImagePickResult =
+  | { ok: true; name: string; dataUrl: string }
+  | { ok: false };
+
 export type GlyphbookApi = {
   runSpike: () => Promise<number>;
   getSpikeBook: () => Promise<Book>;
@@ -14,6 +18,7 @@ export type GlyphbookApi = {
   loadSettings: () => Promise<EditorSettings>;
   saveSettings: (settings: EditorSettings) => Promise<SaveResult>;
   setSpellCheck: (enabled: boolean) => Promise<boolean>;
+  pickImage: () => Promise<ImagePickResult>;
 };
 
 declare global {

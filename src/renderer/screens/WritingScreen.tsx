@@ -24,6 +24,7 @@ import ChapterEditor from "../editor/ChapterEditor";
 import PreviewPane from "../components/PreviewPane";
 import BookDetailsDialog from "../components/BookDetailsDialog";
 import ChapterOptionsDialog from "../components/ChapterOptionsDialog";
+import FullPageEditor from "../components/FullPageEditor";
 import ToolsPanel from "../components/ToolsPanel";
 import { countWords } from "../../shared/services/wordCount";
 import { reorderInSections } from "../../shared/model/reorder";
@@ -435,6 +436,14 @@ export default function WritingScreen() {
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-10 py-6">
               {chapter ? (
+                chapter.kind === "fullpage" ? (
+                  <FullPageEditor
+                    chapter={chapter}
+                    onUpdate={(image) =>
+                      updateChapter(chapter.id, { image })
+                    }
+                  />
+                ) : (
                 <>
                   <input
                     value={chapter.title}
@@ -463,6 +472,7 @@ export default function WritingScreen() {
                     />
                   </div>
                 </>
+                )
               ) : (
                 <div className="m-auto text-center text-muted">
                   Select or add a chapter to begin writing.

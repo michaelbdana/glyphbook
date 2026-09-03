@@ -48,7 +48,10 @@ describe("book validation / codec", () => {
     const clean = sanitizeBook(book);
     const p = clean?.chapters[1].content.content?.[0];
     expect(p?.type).toBe("paragraph");
-    expect(p?.content?.[1].marks?.map((m) => m.type)).toEqual([
+    const inlines = (p as {
+      content?: Array<{ marks?: Array<{ type: string }> }>;
+    } | undefined)?.content;
+    expect(inlines?.[1]?.marks?.map((m) => m.type)).toEqual([
       "bold",
       "italic",
     ]);
@@ -80,7 +83,10 @@ describe("book validation / codec", () => {
       ],
     };
     const clean = sanitizeBook(book);
-    const text = clean?.chapters[0].content.content?.[0]?.content?.[0];
+    const first = clean?.chapters[0].content.content?.[0];
+    const text = (first as {
+      content?: Array<{ type: string; text: string; marks?: unknown }>;
+    } | undefined)?.content?.[0];
     expect(text?.type).toBe("text");
     expect(text?.text).toBe("keep me");
     expect(text?.marks).toBeUndefined();

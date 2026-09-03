@@ -6,6 +6,17 @@ export type ProseInline = {
   marks?: Array<{ type: string; attrs?: Record<string, unknown> }>;
 };
 
+export type ImageAttrs = {
+  src: string;
+  caption?: string;
+  alt?: string;
+  align?: "left" | "center" | "right";
+  width?: number;
+  wrap?: boolean;
+  separatePage?: boolean;
+  href?: string;
+};
+
 export type ProseBlock =
   | {
       type: "paragraph";
@@ -15,6 +26,10 @@ export type ProseBlock =
       type: "heading";
       attrs?: { level?: number };
       content?: ProseInline[];
+    }
+  | {
+      type: "imageBlock";
+      attrs?: ImageAttrs;
     };
 
 export type ProseDoc = {
@@ -52,7 +67,8 @@ export type ChapterKind =
   | "afterword"
   | "acknowledgements"
   | "about"
-  | "alsoby";
+  | "alsoby"
+  | "fullpage";
 
 export type Chapter = {
   id: string;
@@ -64,6 +80,7 @@ export type Chapter = {
   options?: Partial<ChapterOptions>;
   partId?: string;
   volumeId?: string;
+  image?: ImageAttrs;
 };
 
 export type Part = {

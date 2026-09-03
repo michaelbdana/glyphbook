@@ -151,6 +151,34 @@ function registerIpc(): void {
     event.sender.session.setSpellCheckerEnabled(enabled);
     return true;
   });
+
+  ipcMain.handle(IPC.imagePick, async () => {
+    if (!mainWindow) return { ok: false as const };
+    const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+      title: "Choose an image",
+      properties: ["openFile"],
+      filters: [
+        { name: "Images", extensions: ["jpg", "jpeg", "png", "webp", "gif"] },
+      ],
+    });
+    if (canceled || filePaths.length === 0) return { ok: false as const };
+    const filePath = filePaths[0];
+    const ext = path.extname(filePath).toLowerCase();
+    const mime =
+      ext === ".png"
+        ? "image/png"
+        : ext === ".webp"
+          ? "image/webp"
+          : ext === ".gif"
+            ? "image/gif"
+            : "image/jpeg";
+    const buffer = await fs.readFile(filePath);
+    return {
+      ok: true as const,
+      name: path.basename(filePath),
+      dataUrl: `data:${mime};base64,${buffer.toString("base64")}`,
+    };
+  });
 }
 
 void app.whenReady().then(() => {

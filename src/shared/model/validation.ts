@@ -33,6 +33,7 @@ const KINDS = new Set<ChapterKind>([
   "acknowledgements",
   "about",
   "alsoby",
+  "fullpage",
 ]);
 const INCLUDE_IN = new Set(["all", "ebook", "print", "none"]);
 const BEGIN_ON = new Set(["auto", "left", "right"]);
@@ -168,6 +169,9 @@ function sanitizeChapter(value: unknown, index: number): Chapter | null {
       typeof value.volumeId === "string" && value.volumeId
         ? value.volumeId
         : undefined,
+    image: isRecord(value.image)
+      ? cloneAs<NonNullable<Chapter["image"]>>(value.image)
+      : undefined,
   };
 }
 

@@ -13,6 +13,26 @@ const DEVICES = [
 ];
 
 function blockText(block: ProseBlock): ReactElement | null {
+  if (block.type === "imageBlock") {
+    const src = block.attrs?.src;
+    if (!src) return null;
+    const align = block.attrs?.align ?? "center";
+    return (
+      <figure className="mb-3" style={{ textAlign: align }}>
+        <img
+          src={src}
+          alt={block.attrs?.alt ?? ""}
+          className="mx-auto block"
+          style={{ width: `${block.attrs?.width ?? 100}%` }}
+        />
+        {block.attrs?.caption && (
+          <figcaption className="mt-1 text-[11px] italic">
+            {block.attrs.caption}
+          </figcaption>
+        )}
+      </figure>
+    );
+  }
   const text = (block.content ?? []).map((i) => i.text).join("");
   if (block.type === "heading") {
     return <h2 className="mb-3 text-center text-lg font-semibold">{text}</h2>;

@@ -70,6 +70,14 @@ export function compilePrintCss(themeIn: BookTheme, ctx: PrintContext = {}): str
 }`
       : "";
 
+  const fullPageCss = `
+.chapter.fullpage { text-align: center; }
+.chapter.fullpage .fullpage-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}`;
+
   return `
 @page {
   size: ${size};
@@ -116,5 +124,6 @@ ${dropCaps}
 
 div[data-scene-break] { text-align: center; margin: 1.2em 0; }
 ${ornament}
+${fullPageCss}
 `;
 }

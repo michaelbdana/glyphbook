@@ -2,10 +2,18 @@ import type { Content } from "@tiptap/core";
 import type { ReactNode } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { Asterisk, Bold, Heading2, Italic, Pilcrow } from "lucide-react";
+import {
+  Asterisk,
+  Bold,
+  Heading2,
+  ImagePlus,
+  Italic,
+  Pilcrow,
+} from "lucide-react";
 import type { Chapter, ProseDoc } from "../../shared/model/types";
 import { SceneBreak } from "./extensions/sceneBreak";
 import { Monospace, SansSerif, SmallCaps } from "./extensions/marks";
+import { ImageBlock } from "./extensions/imageBlock";
 import "./extensions/extensions.css";
 
 type Props = {
@@ -48,6 +56,7 @@ export default function ChapterEditor({
         heading: { levels: [2, 3, 4, 5, 6] },
       }),
       SceneBreak,
+      ImageBlock,
       SmallCaps,
       Monospace,
       SansSerif,
@@ -90,6 +99,30 @@ export default function ChapterEditor({
       title: "Subheading (H2)",
       run: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
       content: <Heading2 className="h-4 w-4" />,
+    },
+    {
+      key: "image",
+      active: false,
+      title: "Insert image",
+      run: () => {
+        void window.glyphbook.pickImage().then((result) => {
+          if (!result.ok) return;
+          editor
+            .chain()
+            .focus()
+            .insertContent({
+              type: "imageBlock",
+              attrs: {
+                src: result.dataUrl,
+                alt: result.name,
+                width: 100,
+                align: "center",
+              },
+            })
+            .run();
+        });
+      },
+      content: <ImagePlus className="h-4 w-4" />,
     },
     {
       key: "sceneBreak",

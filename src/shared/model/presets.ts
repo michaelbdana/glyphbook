@@ -37,6 +37,7 @@ export const PRESETS: Preset[] = [
   { key: "introduction", label: "Introduction", section: "front", title: "Introduction", numbered: false },
   { key: "prologue", label: "Prologue", section: "body", title: "Prologue", numbered: false },
   { key: "chapter", label: "Chapter", section: "body", title: "Chapter", numbered: true },
+  { key: "fullpage", label: "Full Page Image", section: "body", title: "Full Page Image", numbered: false },
   { key: "epilogue", label: "Epilogue", section: "body", title: "Epilogue", numbered: false },
   { key: "afterword", label: "Afterword", section: "back", title: "Afterword", numbered: false },
   { key: "acknowledgements", label: "Acknowledgements", section: "back", title: "Acknowledgements", numbered: false },

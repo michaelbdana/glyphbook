@@ -28,6 +28,29 @@ function blockHtml(block: ProseBlock): string {
   if (block.type === "heading") {
     return `<h2 class="center">${inlineHtml(block.content)}</h2>`;
   }
+  if (block.type === "imageBlock") {
+    const attrs: { src?: string; alt?: string; caption?: string; align?: string; width?: number } =
+      block.attrs ?? {};
+    const width = attrs.width ?? 100;
+    const align = attrs.align ?? "center";
+    const float =
+      align === "left"
+        ? ' style="float:left;width:55%;margin-right:1em"'
+        : align === "right"
+          ? ' style="float:right;width:55%;margin-left:1em"'
+          : "";
+    const img = `<img src="${escapeHtml(attrs.src ?? "")}" alt="${escapeHtml(
+      attrs.alt ?? "",
+    )}" style="width:${width}%;max-width:100%" />`;
+    const body = attrs.caption
+      ? `<figure${float}>${img}<figcaption style="font-size:0.8em;font-style:italic;text-align:center">${escapeHtml(
+          attrs.caption,
+        )}</figcaption></figure>`
+      : float
+        ? `<figure${float}>${img}</figure>`
+        : `<div style="text-align:center;margin:1em 0">${img}</div>`;
+    return body;
+  }
   if (block.type !== "paragraph") {
     return "";
   }
@@ -38,6 +61,17 @@ function chapterHtml(book: Book): string {
   return book.chapters
     .map((chapter, index) => {
       const isFirst = index === 0;
+
+      if (chapter.kind === "fullpage" && chapter.image?.src) {
+        const img = chapter.image;
+        return `
+<section class="chapter${isFirst ? " first" : ""} fullpage" data-chapter="image">
+  <img src="${escapeHtml(img.src)}" alt="${escapeHtml(
+            img.alt ?? "",
+          )}" class="fullpage-image" />
+</section>`;
+      }
+
       const titleClass = isFirst ? "title" : "chapter-title";
       const body = (chapter.content.content ?? []).map(blockHtml).join("\n");
       return `
