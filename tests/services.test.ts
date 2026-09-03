@@ -10,6 +10,9 @@ import { transformDoc, transformText } from "../src/shared/services/smartQuotes"
 import { computePlan, computeStreak, daysUntilDue } from "../src/shared/services/goals";
 
 const BOOK = buildSampleBook();
+const CHAPTER_ONE = BOOK.chapters.find(
+  (c) => c.kind === "chapter" && c.title === "Chapter One",
+)!;
 
 describe("find & replace", () => {
   it("counts matches per chapter", () => {
@@ -21,12 +24,12 @@ describe("find & replace", () => {
   });
 
   it("is case-insensitive by default", () => {
-    const matches = findInChapter(BOOK.chapters[1], "THE");
+    const matches = findInChapter(CHAPTER_ONE, "THE");
     expect(matches && matches.count).toBeGreaterThan(0);
   });
 
   it("respects case sensitivity", () => {
-    expect(findInChapter(BOOK.chapters[1], "THE", { caseSensitive: true })).toBeNull();
+    expect(findInChapter(CHAPTER_ONE, "THE", { caseSensitive: true })).toBeNull();
   });
 
   it("replaces across the whole book and reports the count", () => {
@@ -39,7 +42,7 @@ describe("find & replace", () => {
   });
 
   it("replaces a unique token exactly once", () => {
-    const { doc, replaced } = replaceInDoc(BOOK.chapters[1].content, "wind", "breeze");
+    const { doc, replaced } = replaceInDoc(CHAPTER_ONE.content, "wind", "breeze");
     expect(replaced).toBeGreaterThanOrEqual(1);
     const html = JSON.stringify(doc);
     expect(html).toContain("breeze");

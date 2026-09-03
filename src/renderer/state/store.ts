@@ -1,13 +1,46 @@
 import { create } from "zustand";
-import type { Book, Chapter, ChapterSection } from "../../shared/model/types";
+import type {
+  Book,
+  Chapter,
+  ChapterOptions,
+  ChapterSection,
+} from "../../shared/model/types";
 import { buildSampleBook } from "../../shared/model/sample";
-import { emptyDoc } from "../editor/doc";
+import {
+  makePresetChapter,
+  PRESETS,
+  type Preset,
+} from "../../shared/model/presets";
 
 export type Screen = "library" | "writing" | "formatting";
 export type ToolId = "find" | "goals" | "sprint" | "quotes" | "editor";
 
 type BookPatch = Partial<
-  Pick<Book, "title" | "author" | "projectName" | "version" | "goals" | "habit" | "habitLog">
+  Pick<
+    Book,
+    | "title"
+    | "author"
+    | "projectName"
+    | "version"
+    | "goals"
+    | "habit"
+    | "habitLog"
+    | "parts"
+    | "volumes"
+  >
+>;
+
+type ChapterPatch = Partial<
+  Pick<
+    Chapter,
+    | "title"
+    | "content"
+    | "numbered"
+    | "options"
+    | "partId"
+    | "volumeId"
+    | "section"
+  >
 >;
 
 type State = {
@@ -30,13 +63,10 @@ type Actions = {
   deleteBook: (id: string) => void;
   duplicateBook: (id: string) => void;
   updateBook: (bookId: string, patch: BookPatch) => void;
-  addChapter: (section: ChapterSection) => void;
+  addPresetPage: (presetKey: Preset["key"]) => void;
   deleteChapter: (chapterId: string) => void;
   selectChapter: (id: string) => void;
-  updateChapter: (
-    chapterId: string,
-    patch: Partial<Pick<Chapter, "title" | "content" | "numbered">>,
-  ) => void;
+  updateChapter: (chapterId: string, patch: ChapterPatch) => void;
   reorderChapters: (chapters: Chapter[]) => void;
   setBookChapters: (chapters: Chapter[]) => void;
   recordWords: (bookId: string, delta: number) => void;
@@ -44,10 +74,43 @@ type Actions = {
   setSaveState: (state: "saved" | "saving") => void;
   openTool: (tool: ToolId) => void;
   closeTool: () => void;
+  addPart: (title: string, subtitle?: string) => void;
+  addVolume: (title: string, subtitle?: string) => void;
+  deletePart: (partId: string) => void;
+  deleteVolume: (volumeId: string) => void;
+  updateOptions: (chapterId: string, options: Partial<ChapterOptions>) => void;
 };
 
 function newId(): string {
   return Math.random().toString(36).slice(2, 10);
+}
+
+function emptyChapter(title: string, section: ChapterSection, numbered: boolean): Chapter {
+  return {
+    id: newId(),
+    title,
+    section,
+    numbered,
+    kind: section === "body" ? "chapter" : "page",
+    content: { type: "doc", content: [] },
+  };
+}
+
+function standardFrontMatter(): Chapter[] {
+  return [
+    {
+      ...emptyChapter("Title Page", "front", false),
+      kind: "title",
+    },
+    {
+      ...emptyChapter("Copyright", "front", false),
+      kind: "copyright",
+    },
+    {
+      ...emptyChapter("Table of Contents", "front", false),
+      kind: "toc",
+    },
+  ];
 }
 
 function blankBook(title: string): Book {
@@ -59,13 +122,8 @@ function blankBook(title: string): Book {
     createdAt: now,
     updatedAt: now,
     chapters: [
-      {
-        id: newId(),
-        title: "Chapter 1",
-        section: "body",
-        numbered: true,
-        content: emptyDoc(),
-      },
+      ...standardFrontMatter(),
+      emptyChapter("Chapter 1", "body", true),
     ],
   };
 }
@@ -73,7 +131,7 @@ function blankBook(title: string): Book {
 function patchBook(
   book: Book,
   chapterId: string,
-  patch: Partial<Pick<Chapter, "title" | "content" | "numbered">>,
+  patch: ChapterPatch,
 ): Book {
   return {
     ...book,
@@ -172,20 +230,14 @@ export const useStore = create<State & Actions>((set, get) => ({
       ),
     })),
 
-  addChapter: (section) => {
+  addPresetPage: (presetKey) => {
     const { activeBookId } = get();
     if (!activeBookId) return;
-    const count =
-      get().books.find((b) => b.id === activeBookId)?.chapters.filter(
-        (c) => c.section === section && c.title.startsWith("Chapter"),
-      ).length ?? 0;
-    const chapter: Chapter = {
-      id: newId(),
-      title: section === "body" ? `Chapter ${count + 1}` : "New Page",
-      section,
-      numbered: section === "body",
-      content: emptyDoc(),
-    };
+    const preset = PRESETS.find((p) => p.key === presetKey);
+    if (!preset) return;
+    const book = get().books.find((b) => b.id === activeBookId);
+    if (!book) return;
+    const chapter = makePresetChapter(book, preset);
     set((s) => ({
       books: s.books.map((b) =>
         b.id === activeBookId
@@ -230,6 +282,22 @@ export const useStore = create<State & Actions>((set, get) => ({
       ),
     })),
 
+  updateOptions: (chapterId, options) =>
+    set((s) => ({
+      books: s.books.map((b) => {
+        if (b.id !== s.activeBookId) return b;
+        return {
+          ...b,
+          updatedAt: new Date().toISOString(),
+          chapters: b.chapters.map((ch) =>
+            ch.id === chapterId
+              ? { ...ch, options: { ...(ch.options ?? {}), ...options } }
+              : ch,
+          ),
+        };
+      }),
+    })),
+
   reorderChapters: (chapters) =>
     set((s) => ({
       books: s.books.map((b) =>
@@ -264,4 +332,80 @@ export const useStore = create<State & Actions>((set, get) => ({
 
   openTool: (tool) => set({ tool }),
   closeTool: () => set({ tool: null }),
+
+  addPart: (title, subtitle) =>
+    set((s) => {
+      if (!s.activeBookId) return s;
+      const part = { id: newId(), title, subtitle };
+      return {
+        books: s.books.map((b) =>
+          b.id === s.activeBookId
+            ? {
+                ...b,
+                updatedAt: new Date().toISOString(),
+                parts: [...(b.parts ?? []), part],
+              }
+            : b,
+        ),
+      };
+    }),
+
+  addVolume: (title, subtitle) =>
+    set((s) => {
+      if (!s.activeBookId) return s;
+      const volume = { id: newId(), title, subtitle };
+      return {
+        books: s.books.map((b) =>
+          b.id === s.activeBookId
+            ? {
+                ...b,
+                updatedAt: new Date().toISOString(),
+                volumes: [...(b.volumes ?? []), volume],
+              }
+            : b,
+        ),
+      };
+    }),
+
+  deletePart: (partId) =>
+    set((s) => {
+      if (!s.activeBookId) return s;
+      return {
+        books: s.books.map((b) => {
+          if (b.id !== s.activeBookId) return b;
+          const chapters = b.chapters.map((c) =>
+            c.partId === partId ? { ...c, partId: undefined } : c,
+          );
+          return {
+            ...b,
+            updatedAt: new Date().toISOString(),
+            chapters,
+            parts: (b.parts ?? []).filter((p) => p.id !== partId),
+          };
+        }),
+      };
+    }),
+
+  deleteVolume: (volumeId) =>
+    set((s) => {
+      if (!s.activeBookId) return s;
+      return {
+        books: s.books.map((b) => {
+          if (b.id !== s.activeBookId) return b;
+          const chapters = b.chapters.map((c) =>
+            c.volumeId === volumeId ? { ...c, volumeId: undefined } : c,
+          );
+          const parts = (b.parts ?? []).map((p) =>
+            p.volumeId === volumeId ? { ...p, volumeId: undefined } : p,
+          );
+          return {
+            ...b,
+            updatedAt: new Date().toISOString(),
+            chapters,
+            parts,
+            volumes: (b.volumes ?? []).filter((v) => v.id !== volumeId),
+          };
+        }),
+      };
+    }),
 }));

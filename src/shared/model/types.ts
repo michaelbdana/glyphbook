@@ -22,12 +22,59 @@ export type ProseDoc = {
 
 export type ChapterSection = "front" | "body" | "back";
 
+export type ChapterOptions = {
+  includeIn: "all" | "ebook" | "print" | "none";
+  beginOn: "auto" | "left" | "right";
+  hideHeading: boolean;
+  hidePageNumber: boolean;
+  hideHeaderFooter: boolean;
+  hideToc: boolean;
+  smallerTitle: boolean;
+  invertText: boolean;
+};
+
+export type ChapterKind =
+  | "chapter"
+  | "page"
+  | "title"
+  | "copyright"
+  | "toc"
+  | "dedication"
+  | "epigraph"
+  | "prologue"
+  | "epilogue"
+  | "blurbs"
+  | "foreword"
+  | "preface"
+  | "introduction"
+  | "afterword"
+  | "acknowledgements"
+  | "about"
+  | "alsoby";
+
 export type Chapter = {
   id: string;
   title: string;
   section: ChapterSection;
   numbered: boolean;
   content: ProseDoc;
+  kind?: ChapterKind;
+  options?: Partial<ChapterOptions>;
+  partId?: string;
+  volumeId?: string;
+};
+
+export type Part = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  volumeId?: string;
+};
+
+export type Volume = {
+  id: string;
+  title: string;
+  subtitle?: string;
 };
 
 export type BookGoals = {
@@ -53,4 +100,6 @@ export type Book = {
   goals?: BookGoals;
   habit?: BookHabit;
   habitLog?: Record<string, number>;
+  parts?: Part[];
+  volumes?: Volume[];
 };

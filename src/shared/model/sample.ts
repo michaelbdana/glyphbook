@@ -4,7 +4,9 @@ function newId(): string {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function paragraphs(...texts: string[]): Book["chapters"][number]["content"] {
+function paragraphs(
+  ...texts: string[]
+): Book["chapters"][number]["content"] {
   return {
     type: "doc",
     content: texts.map((text) => ({
@@ -21,6 +23,7 @@ export function buildSampleBook(): Book {
     title,
     section: "body" as const,
     numbered: true,
+    kind: "chapter" as const,
     content: paragraphs(...texts),
   });
 
@@ -38,10 +41,27 @@ export function buildSampleBook(): Book {
         title: "Title Page",
         section: "front",
         numbered: false,
+        kind: "title",
+        content: paragraphs("The Lighthouse Keeper", "by Sample Author"),
+      },
+      {
+        id: newId(),
+        title: "Copyright",
+        section: "front",
+        numbered: false,
+        kind: "copyright",
         content: paragraphs(
-          "The Lighthouse Keeper",
-          "by Sample Author",
+          "Copyright © 2026 Sample Author",
+          "All rights reserved.",
         ),
+      },
+      {
+        id: newId(),
+        title: "Table of Contents",
+        section: "front",
+        numbered: false,
+        kind: "toc",
+        content: paragraphs(),
       },
       chapter(
         "Chapter One",
@@ -60,6 +80,7 @@ export function buildSampleBook(): Book {
         title: "About the Author",
         section: "back",
         numbered: false,
+        kind: "about",
         content: paragraphs(
           "Sample Author lives by the sea and writes at night, when the house is quiet and the wind has nothing left to prove.",
         ),

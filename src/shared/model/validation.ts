@@ -1,15 +1,41 @@
 import type {
   Book,
   Chapter,
+  ChapterKind,
+  ChapterOptions,
   ChapterSection,
+  Part,
   ProseBlock,
   ProseDoc,
   ProseInline,
+  Volume,
 } from "./types";
+import { DEFAULT_CHAPTER_OPTIONS } from "./presets";
 
 export const CURRENT_SCHEMA_VERSION = 1;
 
 const SECTIONS: ChapterSection[] = ["front", "body", "back"];
+const KINDS = new Set<ChapterKind>([
+  "chapter",
+  "page",
+  "title",
+  "copyright",
+  "toc",
+  "dedication",
+  "epigraph",
+  "prologue",
+  "epilogue",
+  "blurbs",
+  "foreword",
+  "preface",
+  "introduction",
+  "afterword",
+  "acknowledgements",
+  "about",
+  "alsoby",
+]);
+const INCLUDE_IN = new Set(["all", "ebook", "print", "none"]);
+const BEGIN_ON = new Set(["auto", "left", "right"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -119,6 +145,10 @@ function sanitizeChapter(value: unknown, index: number): Chapter | null {
   const section = SECTIONS.includes(value.section as ChapterSection)
     ? (value.section as ChapterSection)
     : "body";
+  const kindRaw = value.kind;
+  const kind = KINDS.has(kindRaw as ChapterKind)
+    ? (kindRaw as ChapterKind)
+    : undefined;
   return {
     id: sanitizeText(value.id, `ch-${index}-${Date.now()}`),
     title,
@@ -126,7 +156,71 @@ function sanitizeChapter(value: unknown, index: number): Chapter | null {
     numbered:
       typeof value.numbered === "boolean" ? value.numbered : section === "body",
     content: sanitizeDoc(value.content),
+    kind,
+    options: isRecord(value.options)
+      ? sanitizeOptions(value.options)
+      : undefined,
+    partId:
+      typeof value.partId === "string" && value.partId
+        ? value.partId
+        : undefined,
+    volumeId:
+      typeof value.volumeId === "string" && value.volumeId
+        ? value.volumeId
+        : undefined,
   };
+}
+
+function sanitizeOptions(value: Record<string, unknown>): ChapterOptions {
+  const options = { ...DEFAULT_CHAPTER_OPTIONS };
+  if (INCLUDE_IN.has(value.includeIn as string)) {
+    options.includeIn = value.includeIn as ChapterOptions["includeIn"];
+  }
+  if (BEGIN_ON.has(value.beginOn as string)) {
+    options.beginOn = value.beginOn as ChapterOptions["beginOn"];
+  }
+  for (const key of [
+    "hideHeading",
+    "hidePageNumber",
+    "hideHeaderFooter",
+    "hideToc",
+    "smallerTitle",
+    "invertText",
+  ] as const) {
+    if (typeof value[key] === "boolean") options[key] = value[key];
+  }
+  return options;
+}
+
+function sanitizeParts(value: unknown): Part[] {
+  if (!Array.isArray(value)) return [];
+  const parts: Part[] = [];
+  for (const raw of value) {
+    if (!isRecord(raw)) continue;
+    const id = typeof raw.id === "string" ? raw.id : "";
+    const title = typeof raw.title === "string" ? raw.title.trim() : "";
+    if (!id || !title) continue;
+    const part: Part = { id, title };
+    if (typeof raw.subtitle === "string") part.subtitle = raw.subtitle;
+    if (typeof raw.volumeId === "string") part.volumeId = raw.volumeId;
+    parts.push(part);
+  }
+  return parts;
+}
+
+function sanitizeVolumes(value: unknown): Volume[] {
+  if (!Array.isArray(value)) return [];
+  const volumes: Volume[] = [];
+  for (const raw of value) {
+    if (!isRecord(raw)) continue;
+    const id = typeof raw.id === "string" ? raw.id : "";
+    const title = typeof raw.title === "string" ? raw.title.trim() : "";
+    if (!id || !title) continue;
+    const volume: Volume = { id, title };
+    if (typeof raw.subtitle === "string") volume.subtitle = raw.subtitle;
+    volumes.push(volume);
+  }
+  return volumes;
 }
 
 export function sanitizeBook(value: unknown): Book | null {
@@ -157,6 +251,10 @@ export function sanitizeBook(value: unknown): Book | null {
       : undefined,
     habitLog: isRecord(value.habitLog)
       ? cloneAs<NonNullable<Book["habitLog"]>>(value.habitLog)
+      : undefined,
+    parts: Array.isArray(value.parts) ? sanitizeParts(value.parts) : undefined,
+    volumes: Array.isArray(value.volumes)
+      ? sanitizeVolumes(value.volumes)
       : undefined,
   };
 }
