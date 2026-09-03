@@ -30,13 +30,27 @@ export type Chapter = {
   content: ProseDoc;
 };
 
+export type BookGoals = {
+  targetWords?: number;
+  dueDate?: string;
+  writingDays?: number[];
+};
+
+export type BookHabit = {
+  dailyWords?: number;
+  writingDays?: number[];
+};
+
 export type Book = {
   id: string;
   title: string;
   author: string;
   projectName?: string;
   version?: string;
-  updatedAt: string;
   createdAt: string;
+  updatedAt: string;
   chapters: Chapter[];
+  goals?: BookGoals;
+  habit?: BookHabit;
+  habitLog?: Record<string, number>;
 };

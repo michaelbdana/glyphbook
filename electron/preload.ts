@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { Book } from "../src/shared/model/types";
+import type { EditorSettings } from "../src/shared/settings";
 
 export type SaveResult = { ok: boolean; path?: string; error?: string };
 
@@ -12,4 +13,9 @@ contextBridge.exposeInMainWorld("glyphbook", {
   loadLibrary: () => ipcRenderer.invoke("library:load"),
   saveLibrary: (books: Book[]) => ipcRenderer.invoke("library:save", books),
   exportBook: (book: Book) => ipcRenderer.invoke("library:export-book", book),
+  loadSettings: () => ipcRenderer.invoke("settings:load"),
+  saveSettings: (settings: EditorSettings) =>
+    ipcRenderer.invoke("settings:save", settings),
+  setSpellCheck: (enabled: boolean) =>
+    ipcRenderer.invoke("spell:set", enabled),
 });

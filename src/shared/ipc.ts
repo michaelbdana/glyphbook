@@ -6,4 +6,7 @@ export const IPC = {
   libraryLoad: "library:load",
   librarySave: "library:save",
   libraryExportBook: "library:export-book",
+  settingsLoad: "settings:load",
+  settingsSave: "settings:save",
+  spellSet: "spell:set",
 } as const;

@@ -46,6 +46,16 @@ body {
   margin: 1.2em 0 0.6em;
 }
 
+.gb-indent .ProseMirror p {
+  text-indent: 2em;
+  margin-bottom: 0.15em;
+}
+
+.gb-spaced .ProseMirror p {
+  text-indent: 0;
+  margin-bottom: 1.1em;
+}
+
 .dark body {
   color-scheme: dark;
 }

@@ -10,6 +10,8 @@ import {
   loadLibrary,
   saveLibrary,
 } from "./library";
+import { loadSettings, saveSettings } from "./settingsStore";
+import type { EditorSettings } from "../src/shared/settings";
 
 let mainWindow: BrowserWindow | null = null;
 let printWindow: BrowserWindow | null = null;
@@ -44,6 +46,17 @@ function createMainWindow(): void {
     void mainWindow.loadFile(
       path.join(__dirname, "../../dist/src/renderer/index.html"),
     );
+  }
+
+  if (process.env.GLYPHBOOK_SMOKE === "1") {
+    mainWindow.webContents.on("console-message", (details) => {
+      if (details.level === "error") {
+        console.log(`[main-window:error] ${details.message}`);
+      }
+    });
+    mainWindow.webContents.on("did-fail-load", (_e, code, desc) => {
+      console.log(`[main-window:fail] ${code} ${desc}`);
+    });
   }
 
   mainWindow.on("closed", () => {
@@ -126,6 +139,17 @@ function registerIpc(): void {
 
   ipcMain.handle(IPC.libraryExportBook, async (_event, book: Book) => {
     return exportBookSnapshot(book);
+  });
+
+  ipcMain.handle(IPC.settingsLoad, async () => loadSettings());
+
+  ipcMain.handle(IPC.settingsSave, async (_event, settings: EditorSettings) => {
+    return saveSettings(settings);
+  });
+
+  ipcMain.handle(IPC.spellSet, async (event, enabled: boolean) => {
+    event.sender.session.setSpellCheckerEnabled(enabled);
+    return true;
   });
 }
 

@@ -5,13 +5,20 @@ import {
   Eye,
   GripVertical,
   Plus,
+  Quote,
+  Search,
   Settings2,
+  Target,
+  Timer,
   Trash2,
+  Type,
 } from "lucide-react";
 import { useStore } from "../state/store";
+import { useSettingsStore } from "../state/settingsStore";
 import ChapterEditor from "../editor/ChapterEditor";
 import PreviewPane from "../components/PreviewPane";
 import BookDetailsDialog from "../components/BookDetailsDialog";
+import ToolsPanel from "../components/ToolsPanel";
 import { countWords } from "../../shared/services/wordCount";
 import { reorderInSections } from "../../shared/model/reorder";
 import type { ChapterSection } from "../../shared/model/types";
@@ -35,6 +42,13 @@ export default function WritingScreen() {
   const previewOpen = useStore((s) => s.previewOpen);
   const togglePreview = useStore((s) => s.togglePreview);
   const saveState = useStore((s) => s.saveState);
+  const editorEpoch = useStore((s) => s.editorEpoch);
+  const openTool = useStore((s) => s.openTool);
+
+  const editorFont = useSettingsStore((s) => s.fontFamily);
+  const editorFontSize = useSettingsStore((s) => s.fontSize);
+  const editorLineHeight = useSettingsStore((s) => s.lineHeight);
+  const paragraphSpacing = useSettingsStore((s) => s.paragraphSpacing);
 
   const [dragId, setDragId] = useState<string | null>(null);
   const [overRowId, setOverRowId] = useState<string | null>(null);
@@ -254,12 +268,24 @@ export default function WritingScreen() {
                     className="mb-2 w-full border-none bg-transparent text-center text-2xl font-semibold outline-none placeholder:text-muted/40"
                     placeholder="Chapter title"
                   />
-                  <ChapterEditor
-                    chapter={chapter}
-                    onContentChange={(doc) =>
-                      updateChapter(chapter.id, { content: doc })
-                    }
-                  />
+                  <div
+                    key={`${chapter.id}:${editorEpoch}`}
+                    className={`flex-1 ${
+                      paragraphSpacing === "spaced" ? "gb-spaced" : "gb-indent"
+                    }`}
+                    style={{
+                      fontFamily: editorFont,
+                      fontSize: editorFontSize,
+                      lineHeight: editorLineHeight,
+                    }}
+                  >
+                    <ChapterEditor
+                      chapter={chapter}
+                      onContentChange={(doc) =>
+                        updateChapter(chapter.id, { content: doc })
+                      }
+                    />
+                  </div>
                 </>
               ) : (
                 <div className="m-auto text-center text-muted">
@@ -287,6 +313,43 @@ export default function WritingScreen() {
             />
             {saveState === "saving" ? "Saving…" : "Saved"}
           </span>
+          <span className="mx-1 h-4 w-px bg-rule" />
+          <button
+            onClick={() => openTool("find")}
+            className="flex items-center gap-1 rounded px-2 py-0.5 hover:bg-chrome-dark"
+            title="Find and Replace"
+          >
+            <Search className="h-3.5 w-3.5" /> Find
+          </button>
+          <button
+            onClick={() => openTool("goals")}
+            className="flex items-center gap-1 rounded px-2 py-0.5 hover:bg-chrome-dark"
+            title="Goals and writing habit"
+          >
+            <Target className="h-3.5 w-3.5" /> Goals
+          </button>
+          <button
+            onClick={() => openTool("sprint")}
+            className="flex items-center gap-1 rounded px-2 py-0.5 hover:bg-chrome-dark"
+            title="Sprint timer"
+          >
+            <Timer className="h-3.5 w-3.5" /> Sprint
+          </button>
+          <button
+            onClick={() => openTool("quotes")}
+            className="flex items-center gap-1 rounded px-2 py-0.5 hover:bg-chrome-dark"
+            title="Smart quotes"
+          >
+            <Quote className="h-3.5 w-3.5" /> Quotes
+          </button>
+          <button
+            onClick={() => openTool("editor")}
+            className="flex items-center gap-1 rounded px-2 py-0.5 hover:bg-chrome-dark"
+            title="Editor settings"
+          >
+            <Type className="h-3.5 w-3.5" /> Editor
+          </button>
+          <span className="mx-1 h-4 w-px bg-rule" />
           <button
             onClick={togglePreview}
             className="flex items-center gap-1 rounded px-2 py-0.5 hover:bg-chrome-dark"
@@ -305,6 +368,8 @@ export default function WritingScreen() {
           onClose={() => setDetailsOpen(false)}
         />
       )}
+
+      <ToolsPanel />
     </div>
   );
 }

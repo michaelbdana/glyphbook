@@ -4,6 +4,11 @@ import { buildSampleBook } from "../../shared/model/sample";
 import { emptyDoc } from "../editor/doc";
 
 export type Screen = "library" | "writing" | "formatting";
+export type ToolId = "find" | "goals" | "sprint" | "quotes" | "editor";
+
+type BookPatch = Partial<
+  Pick<Book, "title" | "author" | "projectName" | "version" | "goals" | "habit" | "habitLog">
+>;
 
 type State = {
   screen: Screen;
@@ -12,11 +17,9 @@ type State = {
   selectedChapterId: string | null;
   previewOpen: boolean;
   saveState: "saved" | "saving";
+  editorEpoch: number;
+  tool: ToolId | null;
 };
-
-type BookPatch = Partial<
-  Pick<Book, "title" | "author" | "projectName" | "version">
->;
 
 type Actions = {
   setScreen: (screen: Screen) => void;
@@ -35,8 +38,12 @@ type Actions = {
     patch: Partial<Pick<Chapter, "title" | "content" | "numbered">>,
   ) => void;
   reorderChapters: (chapters: Chapter[]) => void;
+  setBookChapters: (chapters: Chapter[]) => void;
+  recordWords: (bookId: string, delta: number) => void;
   togglePreview: () => void;
   setSaveState: (state: "saved" | "saving") => void;
+  openTool: (tool: ToolId) => void;
+  closeTool: () => void;
 };
 
 function newId(): string {
@@ -77,6 +84,11 @@ function patchBook(
   };
 }
 
+function todayKey(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 export const useStore = create<State & Actions>((set, get) => ({
   screen: "library",
   books: [buildSampleBook()],
@@ -84,6 +96,8 @@ export const useStore = create<State & Actions>((set, get) => ({
   selectedChapterId: null,
   previewOpen: false,
   saveState: "saved",
+  editorEpoch: 0,
+  tool: null,
 
   setScreen: (screen) => set({ screen }),
 
@@ -109,6 +123,7 @@ export const useStore = create<State & Actions>((set, get) => ({
         books: [book, ...rest],
         activeBookId: id,
         selectedChapterId: book.chapters[0]?.id ?? null,
+        tool: null,
       };
     }),
 
@@ -126,6 +141,7 @@ export const useStore = create<State & Actions>((set, get) => ({
     set((s) => ({
       books: s.books.filter((b) => b.id !== id),
       activeBookId: s.activeBookId === id ? null : s.activeBookId,
+      tool: null,
     })),
 
   duplicateBook: (id) =>
@@ -165,8 +181,7 @@ export const useStore = create<State & Actions>((set, get) => ({
       ).length ?? 0;
     const chapter: Chapter = {
       id: newId(),
-      title:
-        section === "body" ? `Chapter ${count + 1}` : "New Page",
+      title: section === "body" ? `Chapter ${count + 1}` : "New Page",
       section,
       numbered: section === "body",
       content: emptyDoc(),
@@ -184,8 +199,6 @@ export const useStore = create<State & Actions>((set, get) => ({
       selectedChapterId: chapter.id,
     }));
   },
-
-  selectChapter: (id) => set({ selectedChapterId: id }),
 
   deleteChapter: (chapterId) =>
     set((s) => {
@@ -208,6 +221,8 @@ export const useStore = create<State & Actions>((set, get) => ({
       };
     }),
 
+  selectChapter: (id) => set({ selectedChapterId: id, tool: null }),
+
   updateChapter: (chapterId, patch) =>
     set((s) => ({
       books: s.books.map((b) =>
@@ -224,5 +239,29 @@ export const useStore = create<State & Actions>((set, get) => ({
       ),
     })),
 
+  setBookChapters: (chapters) =>
+    set((s) => ({
+      editorEpoch: s.editorEpoch + 1,
+      books: s.books.map((b) =>
+        b.id === s.activeBookId
+          ? { ...b, updatedAt: new Date().toISOString(), chapters }
+          : b,
+      ),
+    })),
+
+  recordWords: (bookId, delta) =>
+    set((s) => ({
+      books: s.books.map((b) => {
+        if (b.id !== bookId || delta <= 0) return b;
+        const key = todayKey();
+        const habitLog = { ...(b.habitLog ?? {}) };
+        habitLog[key] = (habitLog[key] ?? 0) + delta;
+        return { ...b, habitLog };
+      }),
+    })),
+
   togglePreview: () => set((s) => ({ previewOpen: !s.previewOpen })),
+
+  openTool: (tool) => set({ tool }),
+  closeTool: () => set({ tool: null }),
 }));

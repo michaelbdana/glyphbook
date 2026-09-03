@@ -149,6 +149,15 @@ export function sanitizeBook(value: unknown): Book | null {
     createdAt: sanitizeText(value.createdAt, now),
     updatedAt: sanitizeText(value.updatedAt, now),
     chapters,
+    goals: isRecord(value.goals)
+      ? cloneAs<NonNullable<Book["goals"]>>(value.goals)
+      : undefined,
+    habit: isRecord(value.habit)
+      ? cloneAs<NonNullable<Book["habit"]>>(value.habit)
+      : undefined,
+    habitLog: isRecord(value.habitLog)
+      ? cloneAs<NonNullable<Book["habitLog"]>>(value.habitLog)
+      : undefined,
   };
 }
 
