@@ -19,4 +19,7 @@ contextBridge.exposeInMainWorld("glyphbook", {
   setSpellCheck: (enabled: boolean) =>
     ipcRenderer.invoke("spell:set", enabled),
   pickImage: () => ipcRenderer.invoke("image:pick"),
+  exportPdf: (book: Book) => ipcRenderer.invoke("export:pdf", book),
+  exportEpub: (book: Book) => ipcRenderer.invoke("export:epub", book),
+  exportDocx: (book: Book) => ipcRenderer.invoke("export:docx", book),
 });

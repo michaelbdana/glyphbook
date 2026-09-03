@@ -19,6 +19,9 @@ export type GlyphbookApi = {
   saveSettings: (settings: EditorSettings) => Promise<SaveResult>;
   setSpellCheck: (enabled: boolean) => Promise<boolean>;
   pickImage: () => Promise<ImagePickResult>;
+  exportPdf: (book: Book) => Promise<number>;
+  exportEpub: (book: Book) => Promise<SaveResult>;
+  exportDocx: (book: Book) => Promise<SaveResult>;
 };
 
 declare global {

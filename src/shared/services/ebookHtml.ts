@@ -1,6 +1,6 @@
-import type { Book, Chapter, ImageAttrs, ProseBlock, ProseInline } from "../../shared/model/types";
-import type { BookTheme } from "../../shared/model/theme";
-import { compilePrintCss } from "../../shared/services/themeCss";
+import type { Book, Chapter, ImageAttrs, ProseBlock, ProseInline } from "../model/types";
+import type { BookTheme } from "../model/theme";
+import { compilePrintCss } from "./themeCss";
 
 function esc(text: string): string {
   return text

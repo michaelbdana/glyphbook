@@ -12,13 +12,25 @@ import {
 } from "./library";
 import { loadSettings, saveSettings } from "./settingsStore";
 import type { EditorSettings } from "../src/shared/settings";
+import { buildEpubBuffer } from "./exporters/epub";
+import { buildDocxBuffer } from "./exporters/docx";
 
 let mainWindow: BrowserWindow | null = null;
 let printWindow: BrowserWindow | null = null;
 
 const tmpUserData = process.env.GLYPHBOOK_TMP_USERDATA;
-if (process.env.GLYPHBOOK_SMOKE_SAVE === "1" && tmpUserData) {
+if (tmpUserData) {
   app.setPath("userData", tmpUserData);
+}
+
+let pendingPdfBook: Book = buildSampleBook();
+
+function safeFileName(title: string): string {
+  return title.replace(/[^\w-]+/g, "_").slice(0, 60) || "book";
+}
+
+function exportsDir(): string {
+  return path.join(app.getPath("userData"), "exports");
 }
 
 function preloadPath(): string {
@@ -93,7 +105,7 @@ function getPrintWindow(): BrowserWindow {
 }
 
 function registerIpc(): void {
-  ipcMain.handle(IPC.spikeGetBook, () => buildSampleBook());
+  ipcMain.handle(IPC.spikeGetBook, () => pendingPdfBook);
 
   ipcMain.handle(IPC.spikePrint, async (event) => {
     const buffer = await event.sender.printToPDF({
@@ -101,7 +113,11 @@ function registerIpc(): void {
       printBackground: true,
       displayHeaderFooter: false,
     });
-    const outPath = path.join(app.getPath("temp"), "glyphbook-spike.pdf");
+    await fs.mkdir(exportsDir(), { recursive: true });
+    const outPath = path.join(
+      exportsDir(),
+      `${safeFileName(pendingPdfBook.title)}.pdf`,
+    );
     await fs.writeFile(outPath, buffer);
     if (process.env.GLYPHBOOK_SMOKE === "1") {
       console.log(`SPIKE OK path=${outPath} bytes=${buffer.length}`);
@@ -110,21 +126,45 @@ function registerIpc(): void {
   });
 
   ipcMain.handle(IPC.printResult, async (_event, filePath: string) => {
-    if (!mainWindow) return;
-    const { response } = await dialog.showMessageBox(mainWindow, {
-      type: "info",
-      title: "Print spike complete",
-      message: "Sample PDF written",
-      detail: filePath,
-      buttons: ["OK", "Reveal in folder"],
-    });
-    if (response === 1) {
-      shell.showItemInFolder(filePath);
-    }
+    return announceExport("PDF", filePath);
   });
 
   ipcMain.handle(IPC.spikeOpen, async () => {
     const win = getPrintWindow();
+    if (process.env.GLYPHBOOK_SMOKE !== "1") {
+      win.webContents.reload();
+    }
+    return win.id;
+  });
+
+  ipcMain.handle(IPC.exportEpub, async (_event, book: Book) => {
+    const buffer = await buildEpubBuffer(book);
+    await fs.mkdir(exportsDir(), { recursive: true });
+    const outPath = path.join(
+      exportsDir(),
+      `${safeFileName(book.title)}.epub`,
+    );
+    await fs.writeFile(outPath, buffer);
+    return announceExport("ePub", outPath);
+  });
+
+  ipcMain.handle(IPC.exportDocx, async (_event, book: Book) => {
+    const buffer = await buildDocxBuffer(book);
+    await fs.mkdir(exportsDir(), { recursive: true });
+    const outPath = path.join(
+      exportsDir(),
+      `${safeFileName(book.title)}.docx`,
+    );
+    await fs.writeFile(outPath, buffer);
+    return announceExport("DOCX", outPath);
+  });
+
+  ipcMain.handle(IPC.exportPdf, async (_event, book: Book) => {
+    pendingPdfBook = book;
+    const win = getPrintWindow();
+    if (process.env.GLYPHBOOK_SMOKE !== "1") {
+      win.webContents.reload();
+    }
     return win.id;
   });
 
@@ -181,6 +221,25 @@ function registerIpc(): void {
   });
 }
 
+async function announceExport(
+  kind: string,
+  filePath: string,
+): Promise<{ ok: boolean; path: string }> {
+  if (mainWindow) {
+    const { response } = await dialog.showMessageBox(mainWindow, {
+      type: "info",
+      title: `${kind} exported`,
+      message: `${kind} written to your exports folder`,
+      detail: filePath,
+      buttons: ["OK", "Reveal in folder"],
+    });
+    if (response === 1) {
+      shell.showItemInFolder(filePath);
+    }
+  }
+  return { ok: true, path: filePath };
+}
+
 void app.whenReady().then(() => {
   registerIpc();
   createMainWindow();
@@ -193,6 +252,23 @@ void app.whenReady().then(() => {
     void (async () => {
       const result = await saveLibrary([buildSampleBook()]);
       console.log(`SAVE RESULT ${JSON.stringify(result)}`);
+      app.quit();
+    })();
+  }
+
+  if (process.env.GLYPHBOOK_SMOKE_EXPORT === "1") {
+    void (async () => {
+      const book = buildSampleBook();
+      const epub = await buildEpubBuffer(book);
+      const docx = await buildDocxBuffer(book);
+      const dir = path.join(app.getPath("userData"), "exports");
+      await fs.mkdir(dir, { recursive: true });
+      const epubPath = path.join(dir, "smoke.epub");
+      const docxPath = path.join(dir, "smoke.docx");
+      await fs.writeFile(epubPath, epub);
+      await fs.writeFile(docxPath, docx);
+      console.log(`EPUB OK bytes=${epub.length}`);
+      console.log(`DOCX OK bytes=${docx.length}`);
       app.quit();
     })();
   }

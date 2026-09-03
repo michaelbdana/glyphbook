@@ -10,4 +10,7 @@ export const IPC = {
   settingsSave: "settings:save",
   spellSet: "spell:set",
   imagePick: "image:pick",
+  exportPdf: "export:pdf",
+  exportEpub: "export:epub",
+  exportDocx: "export:docx",
 } as const;

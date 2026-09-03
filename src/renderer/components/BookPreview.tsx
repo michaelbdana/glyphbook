@@ -7,7 +7,7 @@ import {
   ebookChapterHtml,
   ebookCss,
   printPreviewDoc,
-} from "../preview/previewDoc";
+} from "../../shared/services/ebookHtml";
 
 type Props = {
   book: Book;

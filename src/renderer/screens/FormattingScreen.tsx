@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { Calculator, Check, Palette, RotateCcw } from "lucide-react";
+import { Calculator, Check, FileDown, Palette, RotateCcw } from "lucide-react";
 import { useStore } from "../state/store";
 import BookPreview from "../components/BookPreview";
 import ImageCalcDialog from "../components/ImageCalcDialog";
@@ -47,6 +47,7 @@ export default function FormattingScreen() {
   const setScreen = useStore((s) => s.setScreen);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [calcOpen, setCalcOpen] = useState(false);
+  const [exportBusy, setExportBusy] = useState<string | null>(null);
 
   const book = books.find((b) => b.id === activeBookId);
 
@@ -69,6 +70,18 @@ export default function FormattingScreen() {
 
   const applyOverride = (theme: BookTheme) => {
     updateBook(book.id, { theme });
+  };
+
+  const exportFile = (kind: "epub" | "pdf" | "docx") => {
+    if (exportBusy) return;
+    setExportBusy(kind);
+    const job =
+      kind === "epub"
+        ? window.glyphbook.exportEpub(book)
+        : kind === "docx"
+          ? window.glyphbook.exportDocx(book)
+          : window.glyphbook.exportPdf(book).then(() => undefined);
+    void job.finally(() => setExportBusy(null));
   };
 
   return (
@@ -96,6 +109,25 @@ export default function FormattingScreen() {
               <Palette className="h-4 w-4" /> Customize Theme
             </button>
           </div>
+        </div>
+
+        <div className="mb-5 flex items-center gap-2 rounded-lg border border-rule bg-white p-2">
+          <FileDown className="h-4 w-4 text-muted" />
+          <span className="mr-1 text-sm font-medium">Export</span>
+          {(["pdf", "epub", "docx"] as const).map((kind) => (
+            <button
+              key={kind}
+              onClick={() => exportFile(kind)}
+              disabled={exportBusy !== null}
+              className="rounded-md border border-rule px-3 py-1 text-xs font-medium uppercase disabled:opacity-50"
+              title={`Export ${kind.toUpperCase()} to your exports folder`}
+            >
+              {exportBusy === kind ? "Working…" : kind}
+            </button>
+          ))}
+          <span className="ml-auto text-xs text-muted">
+            ePub & PDF are publish-ready · DOCX for sharing/backup
+          </span>
         </div>
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">

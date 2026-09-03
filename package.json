@@ -44,6 +44,8 @@
     "@tiptap/pm": "^3.31.2",
     "@tiptap/react": "^3.31.2",
     "@tiptap/starter-kit": "^3.31.2",
+    "docx": "^9.7.1",
+    "jszip": "^3.10.1",
     "lucide-react": "^1.40.0",
     "pagedjs": "^0.4.3",
     "zustand": "^5.0.15"
