@@ -147,6 +147,10 @@ npm run dist:linux
 # outputs release/Glyphbook-<version>.AppImage and release/Glyphbook-<version>.deb
 ```
 
+> **Fedora/RHEL note**: building the `.deb` requires electron-builder's bundled Ruby to load
+> `libcrypt.so.1`. On Fedora/RHEL install it first with `sudo dnf install libxcrypt-compat`,
+> or build just the AppImage with `npx electron-builder --linux AppImage`.
+
 Run the AppImage directly:
 
 ```bash
