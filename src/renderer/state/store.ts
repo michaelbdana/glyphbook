@@ -1,20 +1,13 @@
 import { create } from "zustand";
+import type { BookEntry } from "../../global";
 import type {
   Book,
   Chapter,
   ChapterOptions,
   ChapterSection,
 } from "../../shared/model/types";
-import { buildSampleBook } from "../../shared/model/sample";
-import {
-  makePresetChapter,
-  PRESETS,
-  type Preset,
-} from "../../shared/model/presets";
-import {
-  defaultPrints,
-  type BookPrint,
-} from "../../shared/model/prints";
+import { defaultPrints, type BookPrint } from "../../shared/model/prints";
+import { makePresetChapter, PRESETS, type Preset } from "../../shared/model/presets";
 
 export type Screen = "library" | "writing" | "formatting";
 export type ToolId = "find" | "goals" | "sprint" | "quotes" | "editor";
@@ -52,13 +45,15 @@ type ChapterPatch = Partial<
   >
 >;
 
-type State = {
+export type State = {
   screen: Screen;
   books: Book[];
   activeBookId: string | null;
   selectedChapterId: string | null;
   previewOpen: boolean;
-  saveState: "saved" | "saving";
+  filePaths: Record<string, string>;
+  revision: Record<string, number>;
+  savedRevision: Record<string, number>;
   editorEpoch: number;
   tool: ToolId | null;
 };
@@ -66,12 +61,11 @@ type State = {
 type Actions = {
   setScreen: (screen: Screen) => void;
   setActiveBook: (id: string) => void;
-  loadBooks: (books: Book[]) => void;
-  startBook: () => void;
-  loadSample: () => void;
-  importBook: (book: Book) => void;
+  setLoadedBooks: (entries: BookEntry[]) => void;
+  addBook: (book: Book, filePath: string) => void;
+  updateBookPath: (id: string, filePath: string) => void;
+  markSaved: (id: string, revision: number) => void;
   deleteBook: (id: string) => void;
-  duplicateBook: (id: string) => void;
   updateBook: (bookId: string, patch: BookPatch) => void;
   addPresetPage: (presetKey: Preset["key"]) => void;
   deleteChapter: (chapterId: string) => void;
@@ -81,7 +75,6 @@ type Actions = {
   setBookChapters: (chapters: Chapter[]) => void;
   recordWords: (bookId: string, delta: number) => void;
   togglePreview: () => void;
-  setSaveState: (state: "saved" | "saving") => void;
   openTool: (tool: ToolId) => void;
   closeTool: () => void;
   addPart: (title: string, subtitle?: string) => void;
@@ -92,11 +85,32 @@ type Actions = {
   updatePrint: (print: BookPrint) => void;
 };
 
+export function ensurePrints(book: Book): Book {
+  if (book.prints && book.prints.length > 0) return book;
+  return { ...book, prints: defaultPrints() };
+}
+
+export function blankBook(title: string): Book {
+  const now = new Date().toISOString();
+  return ensurePrints({
+    id: newId(),
+    title,
+    author: "Untitled",
+    createdAt: now,
+    updatedAt: now,
+    chapters: [...standardFrontMatter(), emptyChapter("Chapter 1", "body", true)],
+  });
+}
+
 function newId(): string {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function emptyChapter(title: string, section: ChapterSection, numbered: boolean): Chapter {
+function emptyChapter(
+  title: string,
+  section: ChapterSection,
+  numbered: boolean,
+): Chapter {
   return {
     id: newId(),
     title,
@@ -124,31 +138,16 @@ function standardFrontMatter(): Chapter[] {
   ];
 }
 
-function ensurePrints(book: Book): Book {
-  if (book.prints && book.prints.length > 0) return book;
-  return { ...book, prints: defaultPrints() };
+function edited(
+  revision: Record<string, number>,
+  bookId: string,
+): Pick<State, "revision"> {
+  return {
+    revision: { ...revision, [bookId]: (revision[bookId] ?? 0) + 1 },
+  };
 }
 
-function blankBook(title: string): Book {
-  const now = new Date().toISOString();
-  return ensurePrints({
-    id: newId(),
-    title,
-    author: "Untitled",
-    createdAt: now,
-    updatedAt: now,
-    chapters: [
-      ...standardFrontMatter(),
-      emptyChapter("Chapter 1", "body", true),
-    ],
-  });
-}
-
-function patchBook(
-  book: Book,
-  chapterId: string,
-  patch: ChapterPatch,
-): Book {
+function patchBook(book: Book, chapterId: string, patch: ChapterPatch): Book {
   return {
     ...book,
     updatedAt: new Date().toISOString(),
@@ -163,31 +162,43 @@ function todayKey(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
+export function isBookDirty(
+  revision: Record<string, number>,
+  savedRevision: Record<string, number>,
+  bookId: string | null,
+): boolean {
+  return bookId !== null && (revision[bookId] ?? 0) !== (savedRevision[bookId] ?? 0);
+}
+
 export const useStore = create<State & Actions>((set, get) => ({
   screen: "library",
   books: [],
   activeBookId: null,
   selectedChapterId: null,
   previewOpen: false,
-  saveState: "saved",
+  filePaths: {},
+  revision: {},
+  savedRevision: {},
   editorEpoch: 0,
   tool: null,
 
   setScreen: (screen) => set({ screen }),
 
-  loadBooks: (books) =>
-    set((s) => {
-      const active = s.activeBookId;
-      const stillPresent = books.some((b) => b.id === active);
-      const ensured = books.map(ensurePrints);
+  setLoadedBooks: (entries) =>
+    set(() => {
+      const books = entries.map((e) => ensurePrints(e.book));
+      const filePaths: Record<string, string> = {};
+      for (const e of entries) filePaths[e.book.id] = e.path;
       return {
-        books: ensured,
-        activeBookId: stillPresent ? active : null,
-        selectedChapterId: stillPresent ? s.selectedChapterId : null,
+        books,
+        filePaths,
+        revision: {},
+        savedRevision: {},
+        activeBookId: null,
+        selectedChapterId: null,
+        tool: null,
       };
     }),
-
-  setSaveState: (saveState) => set({ saveState }),
 
   setActiveBook: (id) =>
     set((s) => {
@@ -202,68 +213,62 @@ export const useStore = create<State & Actions>((set, get) => ({
       };
     }),
 
-  startBook: () => {
-    const book = blankBook("Untitled Book");
-    set((s) => ({ books: [...s.books, book], activeBookId: book.id }));
-  },
+  addBook: (book, filePath) =>
+    set((s) => {
+      if (s.books.some((b) => b.id === book.id)) return s;
+      const ensured = ensurePrints(book);
+      return {
+        books: [...s.books, ensured],
+        filePaths: { ...s.filePaths, [ensured.id]: filePath },
+        activeBookId: ensured.id,
+        selectedChapterId: ensured.chapters[0]?.id ?? null,
+        tool: null,
+      };
+    }),
 
-  loadSample: () => {
-    const book = ensurePrints(buildSampleBook());
-    set((s) => ({ books: [...s.books, book], activeBookId: book.id }));
-  },
+  updateBookPath: (id, filePath) =>
+    set((s) => ({ filePaths: { ...s.filePaths, [id]: filePath } })),
 
-  importBook: (book) => {
-    const ensured = ensurePrints(book);
-    set((s) => ({
-      books: [...s.books, ensured],
-      activeBookId: ensured.id,
-      selectedChapterId: ensured.chapters[0]?.id ?? null,
-      tool: null,
-    }));
-  },
+  markSaved: (id, revision) =>
+    set((s) => {
+      if ((s.revision[id] ?? 0) !== revision) return s;
+      return { savedRevision: { ...s.savedRevision, [id]: revision } };
+    }),
 
   deleteBook: (id) =>
-    set((s) => ({
-      books: s.books.filter((b) => b.id !== id),
-      activeBookId: s.activeBookId === id ? null : s.activeBookId,
-      tool: null,
-    })),
-
-  duplicateBook: (id) =>
     set((s) => {
-      const book = s.books.find((b) => b.id === id);
-      if (!book) return s;
-      const copy: Book = {
-        ...book,
-        id: newId(),
-        title: `${book.title} (copy)`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        chapters: book.chapters.map((ch) => ({
-          ...ch,
-          id: newId(),
-          content: JSON.parse(JSON.stringify(ch.content)),
-        })),
+      const revision = { ...s.revision };
+      const savedRevision = { ...s.savedRevision };
+      const filePaths = { ...s.filePaths };
+      delete revision[id];
+      delete savedRevision[id];
+      delete filePaths[id];
+      return {
+        books: s.books.filter((b) => b.id !== id),
+        filePaths,
+        revision,
+        savedRevision,
+        activeBookId: s.activeBookId === id ? null : s.activeBookId,
+        selectedChapterId: s.activeBookId === id ? null : s.selectedChapterId,
+        tool: s.activeBookId === id ? null : s.tool,
       };
-      return { books: [...s.books, copy] };
     }),
 
   updateBook: (bookId, patch) =>
     set((s) => ({
       books: s.books.map((b) =>
-        b.id === bookId
-          ? { ...b, ...patch, updatedAt: new Date().toISOString() }
-          : b,
+        b.id === bookId ? { ...b, ...patch, updatedAt: new Date().toISOString() } : b,
       ),
+      ...edited(s.revision, bookId),
     })),
 
   addPresetPage: (presetKey) => {
     const { activeBookId } = get();
     if (!activeBookId) return;
-    const preset = PRESETS.find((p) => p.key === presetKey);
-    if (!preset) return;
     const book = get().books.find((b) => b.id === activeBookId);
     if (!book) return;
+    const preset = PRESETS.find((p) => p.key === presetKey);
+    if (!preset) return;
     const chapter = makePresetChapter(book, preset);
     set((s) => ({
       books: s.books.map((b) =>
@@ -275,6 +280,7 @@ export const useStore = create<State & Actions>((set, get) => ({
             }
           : b,
       ),
+      ...edited(s.revision, activeBookId),
       selectedChapterId: chapter.id,
     }));
   },
@@ -296,6 +302,7 @@ export const useStore = create<State & Actions>((set, get) => ({
             ? { ...b, updatedAt: new Date().toISOString(), chapters }
             : b,
         ),
+        ...edited(s.revision, s.activeBookId),
         selectedChapterId: selected,
       };
     }),
@@ -303,57 +310,76 @@ export const useStore = create<State & Actions>((set, get) => ({
   selectChapter: (id) => set({ selectedChapterId: id, tool: null }),
 
   updateChapter: (chapterId, patch) =>
-    set((s) => ({
-      books: s.books.map((b) =>
-        b.id === s.activeBookId ? patchBook(b, chapterId, patch) : b,
-      ),
-    })),
+    set((s) => {
+      if (!s.activeBookId) return s;
+      return {
+        books: s.books.map((b) =>
+          b.id === s.activeBookId ? patchBook(b, chapterId, patch) : b,
+        ),
+        ...edited(s.revision, s.activeBookId),
+      };
+    }),
 
   updateOptions: (chapterId, options) =>
-    set((s) => ({
-      books: s.books.map((b) => {
-        if (b.id !== s.activeBookId) return b;
-        return {
-          ...b,
-          updatedAt: new Date().toISOString(),
-          chapters: b.chapters.map((ch) =>
-            ch.id === chapterId
-              ? { ...ch, options: { ...(ch.options ?? {}), ...options } }
-              : ch,
-          ),
-        };
-      }),
-    })),
+    set((s) => {
+      if (!s.activeBookId) return s;
+      return {
+        books: s.books.map((b) => {
+          if (b.id !== s.activeBookId) return b;
+          return {
+            ...b,
+            updatedAt: new Date().toISOString(),
+            chapters: b.chapters.map((ch) =>
+              ch.id === chapterId
+                ? { ...ch, options: { ...(ch.options ?? {}), ...options } }
+                : ch,
+            ),
+          };
+        }),
+        ...edited(s.revision, s.activeBookId),
+      };
+    }),
 
   reorderChapters: (chapters) =>
-    set((s) => ({
-      books: s.books.map((b) =>
-        b.id === s.activeBookId
-          ? { ...b, updatedAt: new Date().toISOString(), chapters }
-          : b,
-      ),
-    })),
+    set((s) => {
+      if (!s.activeBookId) return s;
+      return {
+        books: s.books.map((b) =>
+          b.id === s.activeBookId
+            ? { ...b, updatedAt: new Date().toISOString(), chapters }
+            : b,
+        ),
+        ...edited(s.revision, s.activeBookId),
+      };
+    }),
 
   setBookChapters: (chapters) =>
-    set((s) => ({
-      editorEpoch: s.editorEpoch + 1,
-      books: s.books.map((b) =>
-        b.id === s.activeBookId
-          ? { ...b, updatedAt: new Date().toISOString(), chapters }
-          : b,
-      ),
-    })),
+    set((s) => {
+      if (!s.activeBookId) return s;
+      return {
+        editorEpoch: s.editorEpoch + 1,
+        books: s.books.map((b) =>
+          b.id === s.activeBookId
+            ? { ...b, updatedAt: new Date().toISOString(), chapters }
+            : b,
+        ),
+        ...edited(s.revision, s.activeBookId),
+      };
+    }),
 
   recordWords: (bookId, delta) =>
-    set((s) => ({
-      books: s.books.map((b) => {
-        if (b.id !== bookId || delta <= 0) return b;
-        const key = todayKey();
-        const habitLog = { ...(b.habitLog ?? {}) };
-        habitLog[key] = (habitLog[key] ?? 0) + delta;
-        return { ...b, habitLog };
-      }),
-    })),
+    set((s) => {
+      if (delta <= 0) return s;
+      const book = s.books.find((b) => b.id === bookId);
+      if (!book) return s;
+      const key = todayKey();
+      const habitLog = { ...(book.habitLog ?? {}) };
+      habitLog[key] = (habitLog[key] ?? 0) + delta;
+      return {
+        books: s.books.map((b) => (b.id === bookId ? { ...b, habitLog } : b)),
+        ...edited(s.revision, bookId),
+      };
+    }),
 
   togglePreview: () => set((s) => ({ previewOpen: !s.previewOpen })),
 
@@ -374,6 +400,7 @@ export const useStore = create<State & Actions>((set, get) => ({
               }
             : b,
         ),
+        ...edited(s.revision, s.activeBookId),
       };
     }),
 
@@ -391,6 +418,7 @@ export const useStore = create<State & Actions>((set, get) => ({
               }
             : b,
         ),
+        ...edited(s.revision, s.activeBookId),
       };
     }),
 
@@ -410,6 +438,7 @@ export const useStore = create<State & Actions>((set, get) => ({
             parts: (b.parts ?? []).filter((p) => p.id !== partId),
           };
         }),
+        ...edited(s.revision, s.activeBookId),
       };
     }),
 
@@ -433,22 +462,27 @@ export const useStore = create<State & Actions>((set, get) => ({
             volumes: (b.volumes ?? []).filter((v) => v.id !== volumeId),
           };
         }),
+        ...edited(s.revision, s.activeBookId),
       };
     }),
 
   updatePrint: (print) =>
-    set((s) => ({
-      books: s.books.map((b) => {
-        if (b.id !== s.activeBookId) return b;
-        const prints = (b.prints ?? defaultPrints()).map((p) =>
-          p.id === print.id ? print : p,
-        );
-        const has = (b.prints ?? []).some((p) => p.id === print.id);
-        return {
-          ...b,
-          updatedAt: new Date().toISOString(),
-          prints: has ? prints : [...prints, print],
-        };
-      }),
-    })),
+    set((s) => {
+      if (!s.activeBookId) return s;
+      return {
+        books: s.books.map((b) => {
+          if (b.id !== s.activeBookId) return b;
+          const prints = (b.prints ?? defaultPrints()).map((p) =>
+            p.id === print.id ? print : p,
+          );
+          const has = (b.prints ?? []).some((p) => p.id === print.id);
+          return {
+            ...b,
+            updatedAt: new Date().toISOString(),
+            prints: has ? prints : [...prints, print],
+          };
+        }),
+        ...edited(s.revision, s.activeBookId),
+      };
+    }),
 }));

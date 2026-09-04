@@ -38,7 +38,7 @@ npm run pack:dir       # unpacked build in release/<platform>-unpacked
 - `electron/preload.ts` — `contextBridge` exposing `window.glyphbook`. **Preload hardcodes the IPC channel strings** (it can't `require()` the shared IPC const under sandbox); keep names in sync with `src/shared/ipc.ts` and `electron/main.ts`.
 - `electron/importers/docx.ts` — .docx import: parses raw OOXML (paragraph styles, page breaks, centering, runs, character/paragraph style chains incl. `w:i/w:b val=0`), segments chapters via heuristics (`src/shared/services/outline.ts`), captures the first drawing as the cover.
 - `electron/exporters/epub.ts` + `docx.ts` — in-process generators. Epub honors store profiles from `src/shared/model/epubProfiles.ts`.
-- `electron/library.ts`, `electron/settingsStore.ts` — JSON persistence + snapshots under userData.
+- `electron/library.ts`, `electron/settingsStore.ts` — per-book `.glyphbook` file I/O (atomic writes, unique default paths under Documents/Glyphbook Books), the recent-books shelf (`bookshelf.json` under userData/library), and the one-time migration of the old `library.json`.
 - `src/shared/**` — **framework-free** core (model types, validation, services, theme/print/epub profiles, ebook HTML renderer, print CSS compiler). Importable from main, renderer, and tests. Never import React/Electron here.
 - `src/renderer/**` — React UI. `state/store.ts` (Zustand) is the app store; `state/settingsStore.ts` UI prefs; `state/usePersistedWidth.ts` uses `localStorage`. `screens/` are the three big screens; `components/` dialogs/panels; `editor/` TipTap setup + extensions.
 - `src/print/` — the hidden paged.js print window (separate Vite entry). **It loads the built file `dist/src/print/index.html`, even in dev** — after editing `src/print/*` you must `npm run build:renderer` for changes to take effect.
@@ -59,7 +59,7 @@ npm run pack:dir       # unpacked build in release/<platform>-unpacked
 - **Print page theme**: `export:get-theme` IPC returns the effective theme merged with the chosen `BookPrint` (geometry/typography/bleed). PDF filename = `Title-<PrintLabel>.pdf`.
 - **ePub store profiles**: Kindle profile must remove the interior cover page (Amazon adds the cover); others keep it. Cover metadata uses `properties="cover-image"` + `<meta name="cover">`.
 - **Electron `console-message` typing quirk**: use the single-param `(details) => …` handler, not `(event, level, message, …)`.
-- **Headless smoke tests** (read-only sanity): env vars `GLYPHBOOK_SMOKE=1` (print window), `GLYPHBOOK_SMOKE_SAVE=1`, `GLYPHBOOK_SMOKE_EXPORT=1`, with `GLYPHBOOK_TMP_USERDATA=/tmp/…` to redirect data. Launch as `npx electron --no-sandbox .`.
+- **Headless smoke tests** (read-only sanity): env vars `GLYPHBOOK_SMOKE=1` (print window), `GLYPHBOOK_SMOKE_SAVE=1`, `GLYPHBOOK_SMOKE_EXPORT=1`, with `GLYPHBOOK_TMP_USERDATA=/tmp/…` to redirect data and `GLYPHBOOK_BOOKS_DIR=/tmp/…` to redirect the default book-files folder. Launch as `npx electron --no-sandbox .`.
 - **Linux packaging**: Electron may need `--no-sandbox`/`--ozone-platform-hint=auto`; the README documents this.
 - **The fixture book** `AccidentalSorceress-master.docx` is git-ignored (copyrighted); `tests/docxImport.test.ts` skips automatically when absent. Don't commit it.
 - **Don't paste from outside the app** is a product rule for users, not a code constraint.

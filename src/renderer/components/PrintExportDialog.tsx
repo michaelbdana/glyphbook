@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { CheckCircle2, Download, Loader2, X } from "lucide-react";
+import { CheckCircle2, Download, Folder, Loader2, X } from "lucide-react";
 import type { Book } from "../../shared/model/types";
 import { printKindLabel, trimLabel, type BookPrint } from "../../shared/model/prints";
+import { useStore } from "../state/store";
 
 type Props = {
   book: Book;
@@ -10,6 +11,7 @@ type Props = {
 
 export default function PrintExportDialog({ book, onClose }: Props) {
   const prints = book.prints ?? [];
+  const bookFilePath = useStore((s) => s.filePaths[book.id]);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -17,8 +19,10 @@ export default function PrintExportDialog({ book, onClose }: Props) {
     setBusy(print.id);
     setMessage(null);
     try {
-      await window.glyphbook.exportPdf(book, print);
-      setMessage(`${print.label} PDF exported.`);
+      const outPath = await window.glyphbook.exportPdf(book, print, {
+        bookFilePath,
+      });
+      if (outPath !== null) setMessage(`${print.label} PDF exported.`);
     } finally {
       setBusy(null);
     }
@@ -28,18 +32,31 @@ export default function PrintExportDialog({ book, onClose }: Props) {
     setBusy("all");
     setMessage(null);
     try {
-      for (const print of prints) {
-        await window.glyphbook.exportPdf(book, print);
+      const picked = await window.glyphbook.chooseExportDir(bookFilePath);
+      if (!picked.ok || !picked.path) return;
+      const dir = picked.path;
+      for (let i = 0; i < prints.length; i++) {
+        const last = i === prints.length - 1;
+        await window.glyphbook.exportPdf(book, prints[i], {
+          dir,
+          quiet: !last,
+        });
       }
-      setMessage(`Exported ${prints.length} print PDFs to your exports folder.`);
+      setMessage(`Exported ${prints.length} print PDFs to ${dir}`);
     } finally {
       setBusy(null);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30" onClick={onClose}>
-      <div className="flex max-h-[85vh] w-[680px] flex-col rounded-lg border border-rule bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center bg-black/30"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[85vh] w-[680px] flex-col rounded-lg border border-rule bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between border-b border-rule px-5 py-3">
           <div>
             <h2 className="text-lg font-semibold">Export Print PDF</h2>
@@ -47,8 +64,16 @@ export default function PrintExportDialog({ book, onClose }: Props) {
               Each print version uses its own stored trim, margins, bleed, and
               typography settings.
             </p>
+            <p className="mt-1 flex items-center gap-1 text-xs text-muted">
+              <Folder className="h-3 w-3" /> Each export asks where to save it; it
+              defaults to the folder that holds your book.
+            </p>
           </div>
-          <button onClick={onClose} className="rounded p-1 text-muted hover:bg-chrome" title="Close">
+          <button
+            onClick={onClose}
+            className="rounded p-1 text-muted hover:bg-chrome"
+            title="Close"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -60,14 +85,21 @@ export default function PrintExportDialog({ book, onClose }: Props) {
               disabled={busy !== null || prints.length === 0}
               className="flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
             >
-              {busy === "all" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              Export All ({prints.length})
+              {busy === "all" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              Export All ({prints.length})…
             </button>
           </div>
 
           <div className="space-y-2">
             {prints.map((print) => (
-              <div key={print.id} className="flex items-center gap-3 rounded-md border border-rule bg-chrome/60 p-3">
+              <div
+                key={print.id}
+                className="flex items-center gap-3 rounded-md border border-rule bg-chrome/60 p-3"
+              >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold">
                     {print.label}
@@ -86,8 +118,12 @@ export default function PrintExportDialog({ book, onClose }: Props) {
                   disabled={busy !== null}
                   className="flex shrink-0 items-center gap-1 rounded-md border border-rule bg-white px-3 py-1.5 text-xs font-medium hover:bg-chrome disabled:opacity-50"
                 >
-                  {busy === print.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                  Export
+                  {busy === print.id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Download className="h-3.5 w-3.5" />
+                  )}
+                  Export…
                 </button>
               </div>
             ))}

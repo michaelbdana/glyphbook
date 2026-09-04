@@ -18,7 +18,7 @@ import {
   Type,
   X,
 } from "lucide-react";
-import { useStore } from "../state/store";
+import { useStore, isBookDirty } from "../state/store";
 import { useSettingsStore } from "../state/settingsStore";
 import { usePersistedWidth } from "../state/usePersistedWidth";
 import ResizeHandle from "../components/PaneResize";
@@ -31,11 +31,7 @@ import ToolsPanel from "../components/ToolsPanel";
 import { countWords } from "../../shared/services/wordCount";
 import { reorderInSections } from "../../shared/model/reorder";
 import { presetsForSection } from "../../shared/model/presets";
-import type {
-  Chapter,
-  ChapterSection,
-  Part,
-} from "../../shared/model/types";
+import type { Chapter, ChapterSection, Part } from "../../shared/model/types";
 
 const SECTION_LABEL: Record<ChapterSection, string> = {
   front: "Front Matter",
@@ -71,7 +67,8 @@ export default function WritingScreen() {
   const deleteVolume = useStore((s) => s.deleteVolume);
   const previewOpen = useStore((s) => s.previewOpen);
   const togglePreview = useStore((s) => s.togglePreview);
-  const saveState = useStore((s) => s.saveState);
+  const revision = useStore((s) => s.revision);
+  const savedRevision = useStore((s) => s.savedRevision);
   const editorEpoch = useStore((s) => s.editorEpoch);
   const openTool = useStore((s) => s.openTool);
 
@@ -97,6 +94,7 @@ export default function WritingScreen() {
 
   const book = books.find((b) => b.id === activeBookId);
   const chapter = book?.chapters.find((c) => c.id === selectedChapterId) ?? null;
+  const dirty = isBookDirty(revision, savedRevision, activeBookId);
 
   if (!book) {
     return (
@@ -107,10 +105,7 @@ export default function WritingScreen() {
   }
 
   const sections: ChapterSection[] = ["front", "body", "back"];
-  const totalWords = book.chapters.reduce(
-    (n, c) => n + countWords(c.content),
-    0,
-  );
+  const totalWords = book.chapters.reduce((n, c) => n + countWords(c.content), 0);
   const volumes = book.volumes ?? [];
   const parts = book.parts ?? [];
 
@@ -244,7 +239,11 @@ export default function WritingScreen() {
               )}
               <button
                 onClick={() => {
-                  if (window.confirm(`Delete part "${slice.part.title}"? Chapters will be kept.`)) {
+                  if (
+                    window.confirm(
+                      `Delete part "${slice.part.title}"? Chapters will be kept.`,
+                    )
+                  ) {
                     deletePart(slice.part.id);
                   }
                 }}
@@ -328,9 +327,7 @@ export default function WritingScreen() {
           <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">
             {SECTION_LABEL[section]}
           </span>
-          <span className="ml-1 text-[11px] text-muted/60">
-            {chapters.length}
-          </span>
+          <span className="ml-1 text-[11px] text-muted/60">{chapters.length}</span>
           {section === "body" && (
             <>
               <button
@@ -356,9 +353,7 @@ export default function WritingScreen() {
             </>
           )}
           <button
-            onClick={() =>
-              setAddMenuSection((v) => (v === section ? null : section))
-            }
+            onClick={() => setAddMenuSection((v) => (v === section ? null : section))}
             className="rounded p-0.5 text-muted opacity-0 hover:bg-chrome-dark group-hover:opacity-100"
             title={`Add to ${SECTION_LABEL[section]}`}
           >
@@ -452,39 +447,37 @@ export default function WritingScreen() {
                 chapter.kind === "fullpage" || chapter.kind === "cover" ? (
                   <FullPageEditor
                     chapter={chapter}
-                    onUpdate={(image) =>
-                      updateChapter(chapter.id, { image })
-                    }
+                    onUpdate={(image) => updateChapter(chapter.id, { image })}
                   />
                 ) : (
-                <>
-                  <input
-                    value={chapter.title}
-                    onChange={(e) =>
-                      updateChapter(chapter.id, { title: e.target.value })
-                    }
-                    className="mb-2 w-full border-none bg-transparent text-center text-2xl font-semibold outline-none placeholder:text-muted/40"
-                    placeholder="Chapter title"
-                  />
-                  <div
-                    key={`${chapter.id}:${editorEpoch}`}
-                    className={`flex-1 ${
-                      paragraphSpacing === "spaced" ? "gb-spaced" : "gb-indent"
-                    }`}
-                    style={{
-                      fontFamily: editorFont,
-                      fontSize: editorFontSize,
-                      lineHeight: editorLineHeight,
-                    }}
-                  >
-                    <ChapterEditor
-                      chapter={chapter}
-                      onContentChange={(doc) =>
-                        updateChapter(chapter.id, { content: doc })
+                  <>
+                    <input
+                      value={chapter.title}
+                      onChange={(e) =>
+                        updateChapter(chapter.id, { title: e.target.value })
                       }
+                      className="mb-2 w-full border-none bg-transparent text-center text-2xl font-semibold outline-none placeholder:text-muted/40"
+                      placeholder="Chapter title"
                     />
-                  </div>
-                </>
+                    <div
+                      key={`${chapter.id}:${editorEpoch}`}
+                      className={`flex-1 ${
+                        paragraphSpacing === "spaced" ? "gb-spaced" : "gb-indent"
+                      }`}
+                      style={{
+                        fontFamily: editorFont,
+                        fontSize: editorFontSize,
+                        lineHeight: editorLineHeight,
+                      }}
+                    >
+                      <ChapterEditor
+                        chapter={chapter}
+                        onContentChange={(doc) =>
+                          updateChapter(chapter.id, { content: doc })
+                        }
+                      />
+                    </div>
+                  </>
                 )
               ) : (
                 <div className="m-auto text-center text-muted">
@@ -516,17 +509,15 @@ export default function WritingScreen() {
         <footer className="flex h-9 shrink-0 items-center gap-4 border-t border-rule bg-chrome px-4 text-xs text-muted">
           <span
             className={`flex items-center gap-1 ${
-              saveState === "saving" ? "text-amber-600" : "text-green-700"
+              dirty ? "text-amber-600" : "text-green-700"
             }`}
           >
             <span
               className={`h-2 w-2 rounded-full ${
-                saveState === "saving"
-                  ? "animate-pulse bg-amber-500"
-                  : "bg-green-600"
+                dirty ? "animate-pulse bg-amber-500" : "bg-green-600"
               }`}
             />
-            {saveState === "saving" ? "Saving…" : "Saved"}
+            {dirty ? "Unsaved changes" : "Saved"}
           </span>
           <span className="mx-1 h-4 w-px bg-rule" />
           <button
@@ -619,9 +610,7 @@ export default function WritingScreen() {
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
                 autoFocus
-                placeholder={
-                  groupDialog === "part" ? "Part title" : "Volume title"
-                }
+                placeholder={groupDialog === "part" ? "Part title" : "Volume title"}
                 className="w-full rounded-md border border-rule px-3 py-1.5 outline-none focus:border-accent"
               />
             </label>

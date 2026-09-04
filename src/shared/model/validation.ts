@@ -179,28 +179,18 @@ function sanitizeChapter(value: unknown, index: number): Chapter | null {
     ? (value.section as ChapterSection)
     : "body";
   const kindRaw = value.kind;
-  const kind = KINDS.has(kindRaw as ChapterKind)
-    ? (kindRaw as ChapterKind)
-    : undefined;
+  const kind = KINDS.has(kindRaw as ChapterKind) ? (kindRaw as ChapterKind) : undefined;
   return {
     id: sanitizeText(value.id, `ch-${index}-${Date.now()}`),
     title,
     section,
-    numbered:
-      typeof value.numbered === "boolean" ? value.numbered : section === "body",
+    numbered: typeof value.numbered === "boolean" ? value.numbered : section === "body",
     content: sanitizeDoc(value.content),
     kind,
-    options: isRecord(value.options)
-      ? sanitizeOptions(value.options)
-      : undefined,
-    partId:
-      typeof value.partId === "string" && value.partId
-        ? value.partId
-        : undefined,
+    options: isRecord(value.options) ? sanitizeOptions(value.options) : undefined,
+    partId: typeof value.partId === "string" && value.partId ? value.partId : undefined,
     volumeId:
-      typeof value.volumeId === "string" && value.volumeId
-        ? value.volumeId
-        : undefined,
+      typeof value.volumeId === "string" && value.volumeId ? value.volumeId : undefined,
     image: isRecord(value.image)
       ? cloneAs<NonNullable<Chapter["image"]>>(value.image)
       : undefined,
@@ -364,8 +354,7 @@ export function sanitizeBook(value: unknown): Book | null {
     id: sanitizeText(value.id, `book-${Date.now()}`),
     title: sanitizeText(value.title, "Untitled Book") || "Untitled Book",
     author: sanitizeText(value.author, "Untitled"),
-    projectName:
-      typeof value.projectName === "string" ? value.projectName : undefined,
+    projectName: typeof value.projectName === "string" ? value.projectName : undefined,
     version: typeof value.version === "string" ? value.version : undefined,
     createdAt: sanitizeText(value.createdAt, now),
     updatedAt: sanitizeText(value.updatedAt, now),
@@ -380,9 +369,7 @@ export function sanitizeBook(value: unknown): Book | null {
       ? cloneAs<NonNullable<Book["habitLog"]>>(value.habitLog)
       : undefined,
     parts: Array.isArray(value.parts) ? sanitizeParts(value.parts) : undefined,
-    volumes: Array.isArray(value.volumes)
-      ? sanitizeVolumes(value.volumes)
-      : undefined,
+    volumes: Array.isArray(value.volumes) ? sanitizeVolumes(value.volumes) : undefined,
     themeName:
       typeof value.themeName === "string" && value.themeName
         ? value.themeName
@@ -397,16 +384,19 @@ export function sanitizeBook(value: unknown): Book | null {
   };
 }
 
-export function validateLibrary(value: unknown): Book[] {
-  if (!Array.isArray(value)) return [];
-  const books: Book[] = [];
-  for (const raw of value) {
-    const book = sanitizeBook(raw);
-    if (book) books.push(book);
+export function parseBookFile(raw: string): Book | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return null;
+    if ("book" in parsed) {
+      return isRecord(parsed.book) ? sanitizeBook(parsed.book) : null;
+    }
+    return sanitizeBook(parsed);
+  } catch {
+    return null;
   }
-  return books;
 }
 
-export function serializeLibrary(books: Book[]): string {
-  return JSON.stringify({ schemaVersion: CURRENT_SCHEMA_VERSION, books });
+export function serializeBookFile(book: Book): string {
+  return JSON.stringify({ schemaVersion: CURRENT_SCHEMA_VERSION, book }, null, 2);
 }

@@ -3,7 +3,7 @@
 An offline, desktop book-writing and book-formatting application. Write a manuscript, organize it into front matter / body / back matter with chapters, scenes, parts and volumes, apply a theme, preview it on phones, e-readers, and in print, and export **print PDFs**, **store-specific ePub files**, and **DOCX** — all from a single source file, with no login and no cloud.
 
 - One-time local install (Windows, macOS, Linux)
-- Fully offline: your books live on your computer (`library.json` + timed snapshots)
+- Fully offline: every book is a single `.glyphbook` file you save anywhere you like, plus a local recent-books shelf
 - A familiar three-screen workflow: **My Books → Writing → Formatting**
 - All features below are implemented and covered by an automated test suite
 
@@ -19,22 +19,27 @@ Electron 44 + TypeScript (strict) + React + Tailwind CSS v4 + TipTap/ProseMirror
 ## Features
 
 ### Library & book management (My Books)
-- Start a new book, upload an existing **.docx**, or load a sample
+
+- Start a new book, upload an existing **.docx**, or load a sample — new books and imports prompt you to choose where to save them (the sample goes to your default **Glyphbook Books** folder automatically)
+- Open any saved **.glyphbook** book from anywhere on disk: **File → Open Book…** or ⌘/Ctrl+O, or the **Open a Book…** button
+- Native **File** menu with shortcuts: New Book (⌘/Ctrl+N), Open Book… (⌘/Ctrl+O), Save (⌘/Ctrl+S), Save As… (⌘/Ctrl+Shift+S)
 - Cover thumbnails on each book tile (captured automatically from imported documents)
-- Book CRUD: open, duplicate, delete, rename via **Book Details** (title, author/pen name, project name, version)
-- Most-recently-used ordering; grid tiles
-- First-run welcome with an empty library
+- Book CRUD: duplicate (saves a copy to a new location), rename via **Book Details** (title, author/pen name, project name, version), delete (also removes the book file)
+- Your book file’s location is shown on each tile; **My Books** lists the books you have created or opened
+- First-run welcome with an empty shelf; books from the old single-`library.json` layout are migrated once into per-book files under `Documents/Glyphbook Books`
 
 ### Writing editor (WYSIWYG)
+
 - Undo / redo and full rich-text formatting: bold, italic, underline, strikethrough, inline code, small caps, monospace, sans-serif, clear formatting
 - Paragraph style dropdown (Paragraph / Heading 2–6)
 - Text alignment: left, center, right, justify
 - Bulleted and numbered lists, block quotes, horizontal rules
 - Scene breaks and inline images
 - Editor display preferences (font, size, line height, indented vs. spaced paragraphs, spell check) — display-only, never affects output
-- Words are auto-saved to disk as you type
+- Edits are tracked per book ("Saved" / "Unsaved changes" indicator); press ⌘/Ctrl+S or **File → Save** to write them to your book file
 
 ### Book structure
+
 - Front Matter / Body / Back Matter sections with drag-and-drop reordering and cross-section moves
 - Preset pages: **Cover**, Title Page, Copyright, Table of Contents, Dedication, Epigraph, Blurbs, Foreword, Preface, Introduction, Prologue, Chapter, Epilogue, Afterword, Acknowledgements, About the Author, Also By, Full Page Image
 - Parts & Volumes grouping with keep-children delete
@@ -42,6 +47,7 @@ Electron 44 + TypeScript (strict) + React + Tailwind CSS v4 + TipTap/ProseMirror
 - **Reclassify** any item between sections and page types (e.g., fix an import that guessed a chapter where a Copyright page belongs)
 
 ### Writing tools
+
 - Word counts (book-wide and nested-aware)
 - Find & Replace across the whole book (case option, replace all)
 - Smart quotes conversion (book-wide, typographic “ ” ‘ ’)
@@ -50,43 +56,51 @@ Electron 44 + TypeScript (strict) + React + Tailwind CSS v4 + TipTap/ProseMirror
 - Sprint timer
 
 ### Themes & formatting (Formatting)
+
 - Theme-as-data model: preset themes and a custom theme builder
 - Body/heading fonts, sizes, line height, justification, paragraph start, drop caps/lead-in, scene-break ornaments
 - Trim sizes and margins; page-number/running-header placement (legacy theme headers)
 - Print-ready CSS compiler shared by preview and export
 
 ### Print versions (paperback / hardcover / large print)
+
 - Three stored configs per book by default: **Paperback, Hardcover, Large Print** — each fully editable and persisted with the book
 - Per version: name, KDP trim-size catalogs (or custom), four margins, **bleed** (page sized to KDP spec: width +0.125″, height +0.25″), ink (B&W / standard / premium color), paper (white / cream / groundwood), body font size, line height, justification
 - **Print-only headers & footers** per version: left / center / right text boxes with macros — `{page}`, `{total}`, `{book}`, `{author}`, `{chapter}` — plus bold/italic/underline; compiled into CSS paged-media margin boxes and never into the eBook
 
 ### Imaging
+
 - Inline images with alignment, width %, caption, alt text, wrap text, separate-page (print), remove
 - Full-page image pages and the optional **Cover page**
 - Image Size Calculator (full-bleed and in-margin pixel math for print and eBook)
 
 ### Previews
+
 - Device previews (Kindle Paperwhite/Oasis, Nook Glowlight, Kobo Forma, iPhone, Galaxy, iPad, Kindle Fire) rendered from the same content/theme as export
 - Print preview using the compiled print CSS; resizable panes whose widths are remembered
 
 ### Import (.docx)
+
 - Parses Word's raw XML: paragraph styles, page breaks, centering, run-level bold/italic **and** character/paragraph style chains (e.g., italics via the Emphasis style), including `w:i/w:b val=0` overrides
 - Auto chapter detection: Heading 1–3 short titles, page-break-started centered titles, and markers like "Chapter One", "Prologue", "Epilogue", "Part One", plus back-matter labels — tolerant of manuscripts that use Heading 2 for chapters
 - Extracts the document's cover image (first drawing) and inserts it as the first **Cover** page
 - Adds Title Page / Copyright / Table of Contents front matter automatically
 
 ### Export
+
 - **Print PDF** per stored print version (Paperback/Hardcover/Large Print), with KDP bleed geometry; filenames like `Title-Paperback.pdf`
 - **ePub** with store profiles — **Kindle (KDP), Nook, Google Play, Apple Books (iBooks), Kobo, Generic** (and **Export All 6**): each tuned to that store (e.g., Kindle omits the interior cover since Amazon adds it; Kobo keeps the cover first; EPUB3 nav + NCX; embedded cover metadata)
 - **DOCX** for sharing/backup
-- Everything exports to your `exports/` folder with "Reveal in folder" after export
+- Exports default to the folder that holds your book (`.glyphbook`); each export asks where to save and you can pick anywhere else. "Export All" batches ask once for a folder. A "Reveal in folder" confirmation follows single exports
 
 ### Data safety
-- Debounced autosave to `library.json` with timed snapshot backups (last 10 kept)
-- Per-book `.json` snapshot export
+
+- Each book is a self-contained `.glyphbook` file written atomically (temp + rename) so a crash never corrupts it
+- Save / ⌘/Ctrl+S writes to the current file; **Save As…** relocates or copies a book; you are prompted before closing with unsaved changes
 - Local `settings.json`; zero network, no accounts, no telemetry
 
 ## Requirements note
+
 See [Requirements](#requirements) above. Node/npm are needed only to build; end users install just the packaged app.
 
 ## Run in development
@@ -115,6 +129,7 @@ npm run dev
   ```
 
   or set `ELECTRON_DISABLE_SANDBOX=1` before `npm run dev`.
+
 - Missing GUI libraries on minimal Fedora/Debian installs: `gtk3`, `libnss3`, `libXScrnSaver`, `libasound`.
 
 ## Run the production build
@@ -193,13 +208,15 @@ npm run dist
 
 Glyphbook stores everything locally, no sync, no telemetry:
 
-| Platform | Data directory |
-|---|---|
-| Linux | `~/.config/glyphbook/` |
-| macOS | `~/Library/Application Support/glyphbook/` |
-| Windows | `%APPDATA%\glyphbook\` |
+| Platform | Data directory                             |
+| -------- | ------------------------------------------ |
+| Linux    | `~/.config/glyphbook/`                     |
+| macOS    | `~/Library/Application Support/glyphbook/` |
+| Windows  | `%APPDATA%\glyphbook\`                     |
 
-Inside it: `library/library.json` (all books), `library/snapshots/` (timed autosave backups), `settings.json`, and `exports/` (PDF, ePub, DOCX). Books are also saved to your exports folder by name when you export.
+Inside it: `settings.json`, the `library/` folder holding the recent-books shelf (`bookshelf.json`) and any `library-legacy-backup.json`, plus a default **Glyphbook Books** folder under your Documents (created on first launch and used for migration and the sample book).
+
+Your manuscripts themselves live **wherever you save them** — each book is one `.glyphbook` file (pretty-printed JSON with a schema version). Open and relocate them like any document. Exports (PDF/ePub/DOCX) default to the same folder as that book file; a small `exports/` folder is only used as a fallback by the developer Print Spike tool.
 
 ## Known limitations
 

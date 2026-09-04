@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { CheckCircle2, Download, Loader2, X } from "lucide-react";
+import { CheckCircle2, Download, Folder, Loader2, X } from "lucide-react";
 import type { Book } from "../../shared/model/types";
 import { EPUB_PROFILES, type EpubProfile } from "../../shared/model/epubProfiles";
+import { useStore } from "../state/store";
 
 type Props = {
   book: Book;
@@ -9,18 +10,21 @@ type Props = {
 };
 
 export default function ExportEpubDialog({ book, onClose }: Props) {
+  const bookFilePath = useStore((s) => s.filePaths[book.id]);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  const exportOne = async (profile: EpubProfile, quiet = false) => {
-    setBusy(quiet ? "all" : profile.id);
+  const exportOne = async (profile: EpubProfile) => {
+    setBusy(profile.id);
     setMessage(null);
     try {
-      await window.glyphbook.exportEpub(book, {
+      const result = await window.glyphbook.exportEpub(book, {
         profile: profile.id,
-        quiet,
+        bookFilePath,
       });
-      if (!quiet) setMessage(`${profile.label} ePub exported.`);
+      if (result.ok && !result.canceled) {
+        setMessage(`${profile.label} ePub exported.`);
+      }
     } finally {
       setBusy(null);
     }
@@ -30,15 +34,17 @@ export default function ExportEpubDialog({ book, onClose }: Props) {
     setBusy("all");
     setMessage(null);
     try {
+      const picked = await window.glyphbook.chooseExportDir(bookFilePath);
+      if (!picked.ok || !picked.path) return;
+      const dir = picked.path;
       for (const profile of EPUB_PROFILES) {
         await window.glyphbook.exportEpub(book, {
           profile: profile.id,
+          dir,
           quiet: true,
         });
       }
-      setMessage(
-        `Exported ${EPUB_PROFILES.length} ePubs to your exports folder.`,
-      );
+      setMessage(`Exported ${EPUB_PROFILES.length} ePubs to ${dir}`);
     } finally {
       setBusy(null);
     }
@@ -57,8 +63,12 @@ export default function ExportEpubDialog({ book, onClose }: Props) {
           <div>
             <h2 className="text-lg font-semibold">Export eBook</h2>
             <p className="text-sm text-muted">
-              {book.title} — each store has its own EPUB requirements, so
-              choose the one you are uploading to.
+              {book.title} — each store has its own EPUB requirements, so choose the one
+              you are uploading to.
+            </p>
+            <p className="mt-1 flex items-center gap-1 text-xs text-muted">
+              <Folder className="h-3 w-3" /> Each export asks where to save it; it
+              defaults to the folder that holds your book.
             </p>
           </div>
           <button
@@ -82,7 +92,7 @@ export default function ExportEpubDialog({ book, onClose }: Props) {
               ) : (
                 <Download className="h-4 w-4" />
               )}
-              Export All 6
+              Export All 6…
             </button>
           </div>
 
@@ -113,7 +123,7 @@ export default function ExportEpubDialog({ book, onClose }: Props) {
                     ) : (
                       <Download className="h-3.5 w-3.5" />
                     )}
-                    Export
+                    Export…
                   </button>
                 </div>
               );

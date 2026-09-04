@@ -26,13 +26,7 @@ import {
   type RunningHeader,
 } from "../../shared/model/theme";
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block text-sm">
       <span className="mb-1 block font-medium">{label}</span>
@@ -49,6 +43,7 @@ const inputClass =
 export default function FormattingScreen() {
   const books = useStore((s) => s.books);
   const activeBookId = useStore((s) => s.activeBookId);
+  const filePaths = useStore((s) => s.filePaths);
   const updateBook = useStore((s) => s.updateBook);
   const updatePrint = useStore((s) => s.updatePrint);
   const setScreen = useStore((s) => s.setScreen);
@@ -96,7 +91,7 @@ export default function FormattingScreen() {
     if (exportBusy) return;
     setExportBusy(kind);
     void window.glyphbook
-      .exportDocx(book)
+      .exportDocx(book, { bookFilePath: filePaths[book.id] })
       .finally(() => setExportBusy(null));
   };
 
@@ -142,10 +137,10 @@ export default function FormattingScreen() {
               className="rounded-md border border-rule px-3 py-1 text-xs font-medium uppercase disabled:opacity-50"
               title={
                 kind === "pdf"
-                  ? "Export print versions (Paperback, Hardcover, Large Print)"
+                  ? "Export print versions (Paperback, Hardcover, Large Print) — choose where to save"
                   : kind === "epub"
-                    ? "Export store-specific ePub versions"
-                    : `Export ${kind.toUpperCase()} to your exports folder`
+                    ? "Export store-specific ePub versions — choose where to save"
+                    : `Export ${kind.toUpperCase()} — choose where to save`
               }
             >
               {exportBusy === kind ? "Working…" : kind}
@@ -180,9 +175,9 @@ export default function FormattingScreen() {
             ))}
           </div>
           <p className="mt-2 text-[11px] text-muted">
-            KDP print minimums: trim-based page counts; outside/top/bottom ≥
-            0.25" (no bleed) or 0.375" (bleed); inside gutter 0.375"–0.875" by
-            page count. Bleed adds 0.125" to the page width and 0.25" to height.
+            KDP print minimums: trim-based page counts; outside/top/bottom ≥ 0.25" (no
+            bleed) or 0.375" (bleed); inside gutter 0.375"–0.875" by page count. Bleed
+            adds 0.125" to the page width and 0.25" to height.
           </p>
         </div>
 
@@ -197,7 +192,10 @@ export default function FormattingScreen() {
                   active ? "border-accent ring-1 ring-accent" : "border-rule"
                 }`}
               >
-                <div className="mb-2 rounded-md bg-chrome px-2 py-1 text-center text-[10px] font-semibold" style={{ fontFamily: preset.theme.headingFontFamily }}>
+                <div
+                  className="mb-2 rounded-md bg-chrome px-2 py-1 text-center text-[10px] font-semibold"
+                  style={{ fontFamily: preset.theme.headingFontFamily }}
+                >
                   Chapter One
                 </div>
                 <div
@@ -208,14 +206,12 @@ export default function FormattingScreen() {
                   }}
                 >
                   <p className="mb-1 line-clamp-2">
-                    The wind arrived before the rain did, tearing across the
-                    headland in long, hungry gusts.
+                    The wind arrived before the rain did, tearing across the headland in
+                    long, hungry gusts.
                   </p>
                 </div>
                 <div className="flex items-center">
-                  <span className="truncate text-sm font-medium">
-                    {preset.name}
-                  </span>
+                  <span className="truncate text-sm font-medium">{preset.name}</span>
                   {active && (
                     <span className="ml-auto rounded-full bg-accent p-0.5 text-white">
                       <Check className="h-3.5 w-3.5" />
@@ -282,9 +278,7 @@ export default function FormattingScreen() {
         />
       )}
 
-      {epubOpen && (
-        <ExportEpubDialog book={book} onClose={() => setEpubOpen(false)} />
-      )}
+      {epubOpen && <ExportEpubDialog book={book} onClose={() => setEpubOpen(false)} />}
 
       {printOpen && (
         <PrintExportDialog book={book} onClose={() => setPrintOpen(false)} />
@@ -497,9 +491,7 @@ function ThemeBuilder({
           <Field label="Running header">
             <select
               value={t.runningHeader}
-              onChange={(e) =>
-                set({ runningHeader: e.target.value as RunningHeader })
-              }
+              onChange={(e) => set({ runningHeader: e.target.value as RunningHeader })}
               className={selectClass}
             >
               <option value="chapterTitle">Chapter title</option>

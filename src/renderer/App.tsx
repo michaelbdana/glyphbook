@@ -1,5 +1,11 @@
 import { useEffect, useRef } from "react";
 import { useStore } from "./state/store";
+import {
+  confirmCloseAllowed,
+  handleMenuCommand,
+  initSession,
+  shelfPaths,
+} from "./state/session";
 import { useSettingsStore } from "./state/settingsStore";
 import { countWords } from "../shared/services/wordCount";
 import type { Book } from "../shared/model/types";
@@ -14,9 +20,6 @@ function bookWords(book: Book): number {
 
 export default function App() {
   const screen = useStore((s) => s.screen);
-  const books = useStore((s) => s.books);
-  const loadBooks = useStore((s) => s.loadBooks);
-  const setSaveState = useStore((s) => s.setSaveState);
   const recordWords = useStore((s) => s.recordWords);
   const replaceSettings = useSettingsStore((s) => s.replace);
   const spellCheck = useSettingsStore((s) => s.spellCheck);
@@ -25,26 +28,37 @@ export default function App() {
   const lineHeight = useSettingsStore((s) => s.lineHeight);
   const paragraphSpacing = useSettingsStore((s) => s.paragraphSpacing);
 
-  const firstRender = useRef(true);
   const settingsFirstRender = useRef(true);
   const spellFirstRender = useRef(true);
 
   useEffect(() => {
-    let alive = true;
-    void (async () => {
-      try {
-        const loaded = await window.glyphbook.loadLibrary();
-        if (alive && loaded !== null) {
-          loadBooks(loaded);
-        }
-      } catch {
-        // first run with no library file on disk
+    void initSession().catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    const offMenu = window.glyphbook.onMenuCommand(handleMenuCommand);
+    const offClose = window.glyphbook.onConfirmClose(() => {
+      if (confirmCloseAllowed()) {
+        void window.glyphbook.allowClose();
       }
-    })();
+    });
     return () => {
-      alive = false;
+      offMenu();
+      offClose();
     };
-  }, [loadBooks]);
+  }, []);
+
+  useEffect(() => {
+    let previous = shelfPaths();
+    const unsub = useStore.subscribe(() => {
+      const current = shelfPaths();
+      if (current !== previous) {
+        previous = current;
+        void window.glyphbook.persistShelf(current ? current.split("|") : []);
+      }
+    });
+    return unsub;
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -68,21 +82,6 @@ export default function App() {
     });
     return unsub;
   }, [recordWords]);
-
-  useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
-    const timer = setTimeout(() => {
-      setSaveState("saving");
-      void window.glyphbook
-        .saveLibrary(books)
-        .catch(() => undefined)
-        .finally(() => setSaveState("saved"));
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [books, setSaveState]);
 
   useEffect(() => {
     if (settingsFirstRender.current) {
