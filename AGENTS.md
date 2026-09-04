@@ -30,6 +30,7 @@ npm run pack:dir       # unpacked build in release/<platform>-unpacked
 - **Fully offline.** Never add network calls, analytics, auto-update phoning home, or remote content. No new runtime deps that require services.
 - **No committing unless asked.** The user asks explicitly each time.
 - Prefer editing existing files; don't create docs (`.md`) unless requested. `README.md` is intentionally the only doc.
+- **Keep `README.md` current**: any change that affects features, behavior, commands, data locations, or Linux/macOS/Windows requirements must be reflected in `README.md` in the same change.
 
 ## Architecture map
 
